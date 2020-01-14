@@ -62,7 +62,7 @@ static void BuildTestFromFile(const char* szFilePath)
     uint32_t dwMoveStr;
     char szFen[128];
     char szFileName[MAX_CHAR] = { 0 };
-    char* szResult;
+    const char* szResult;
     PgnFileStruct pgn;
 
     if (!pgn.Read(szFilePath)) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base.h"
+#include <cstring>
 #include <filesystem>
 
 inline const int PATH_MAX_CHAR = 1024;

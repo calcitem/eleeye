@@ -1,11 +1,12 @@
-#include <string.h>
+#include "pipe.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <unistd.h>
 #endif
+
 #include "base2.h"
-#include "pipe.h"
 
 inline void ParseDir(char* szDir, const char* szPath)
 {
