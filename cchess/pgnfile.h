@@ -31,26 +31,28 @@ const int MAX_REM_LEN = 4096;
 const bool NO_ADVERT = true;
 
 struct PgnFileStruct {
-  char szEvent[MAX_STR_LEN], szRound[MAX_STR_LEN], szDate[MAX_STR_LEN], szSite[MAX_STR_LEN];
-  char szRedTeam[MAX_STR_LEN], szRed[MAX_STR_LEN], szRedElo[MAX_STR_LEN];
-  char szBlackTeam[MAX_STR_LEN], szBlack[MAX_STR_LEN], szBlackElo[MAX_STR_LEN];
-  char szEcco[MAX_STR_LEN], szOpen[MAX_STR_LEN], szVar[MAX_STR_LEN];
-  int nMaxMove, nResult;
-  PositionStruct posStart;
-  unsigned short wmvMoveTable[MAX_MOVE_LEN];
-  char *szCommentTable[MAX_MOVE_LEN];
+    char szEvent[MAX_STR_LEN], szRound[MAX_STR_LEN], szDate[MAX_STR_LEN], szSite[MAX_STR_LEN];
+    char szRedTeam[MAX_STR_LEN], szRed[MAX_STR_LEN], szRedElo[MAX_STR_LEN];
+    char szBlackTeam[MAX_STR_LEN], szBlack[MAX_STR_LEN], szBlackElo[MAX_STR_LEN];
+    char szEcco[MAX_STR_LEN], szOpen[MAX_STR_LEN], szVar[MAX_STR_LEN];
+    int nMaxMove, nResult;
+    PositionStruct posStart;
+    unsigned short wmvMoveTable[MAX_MOVE_LEN];
+    char* szCommentTable[MAX_MOVE_LEN];
 
-  void Init(void);
-  PgnFileStruct(void) {
-    Init();
-  };
-  ~PgnFileStruct(void);
-  void Reset(void) {
-    this->~PgnFileStruct();
-    Init();
-  }
-  bool Read(const char *szFileName, bool bNoAdvert = false);
-  bool Write(const char *szFileName, bool bNoAdvert = false) const;
+    void Init(void);
+    PgnFileStruct(void)
+    {
+        Init();
+    };
+    ~PgnFileStruct(void);
+    void Reset(void)
+    {
+        this->~PgnFileStruct();
+        Init();
+    }
+    bool Read(const char* szFileName, bool bNoAdvert = false);
+    bool Write(const char* szFileName, bool bNoAdvert = false) const;
 }; // pgn
 
 #endif

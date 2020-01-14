@@ -1,5 +1,4 @@
-#ifndef WSOCKBAS_H
-#define WSOCKBAS_H
+#pragma once
 
 #ifdef _WIN32
 
@@ -19,16 +18,14 @@ LONG WINAPI WSBSend(LONG nSocket, LPCSTR lpBuffer, LONG nLen);
 
 const int INVALID_SOCKET = -1;
 
-inline void WSBStartup(void) {};
-inline void WSBCleanup(void) {};
+inline void WSBStartup(void){};
+inline void WSBCleanup(void){};
 int WSBOpenServer(int nPort);
 void WSBCloseServer(int nSocket);
 int WSBAccept(int nSocket);
-int WSBConnect(const char *lpszHost, int nPort);
+int WSBConnect(const char* lpszHost, int nPort);
 void WSBDisconnect(int nSocket);
-int WSBRecv(int nSocket, char *lpBuffer, int nLen);
-int WSBSend(int nSocket, const char *lpBuffer, int nLen);
-
-#endif
+int WSBRecv(int nSocket, char* lpBuffer, int nLen);
+int WSBSend(int nSocket, const char* lpBuffer, int nLen);
 
 #endif

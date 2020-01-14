@@ -1,3 +1,9 @@
 /BIN/
 .project
 .settings
+/@bin/
+/@lib/
+/build/
+/.vscode/
+clang-format.exe
+format.bat
