@@ -1,4 +1,4 @@
-/* 
+ï»¿/* 
 MXQ/XQF/CHE/CHN/CCM->PGN Convertor - a Chinese Chess Score Convertion Program
 Designed by Morning Yellow, Version: 3.15, Last Modified: Oct. 2009
 Copyright (C) 2004-2008 www.elephantbase.net
@@ -88,23 +88,23 @@ static void SearchFile(const char* szFilePath, const WIN32_FIND_DATA& wfd, const
         nPathLen = strlen(szFilePath) - 4;
         if (nPathLen > 0) {
             if (false) {
-            } else if (strnicmp(szFilePath + nPathLen, ".XQF", 4) == 0) {
+            } else if (_strnicmp(szFilePath + nPathLen, ".XQF", 4) == 0) {
                 strncpy(szPgnFile, szFilePath, nPathLen);
                 strcpy(szPgnFile + nPathLen, ".PGN");
                 Xqf2Pgn(szFilePath, szPgnFile, EccoApi);
-            } else if (strnicmp(szFilePath + nPathLen, ".MXQ", 4) == 0) {
+            } else if (_strnicmp(szFilePath + nPathLen, ".MXQ", 4) == 0) {
                 strncpy(szPgnFile, szFilePath, nPathLen);
                 strcpy(szPgnFile + nPathLen, ".PGN");
                 Mxq2Pgn(szFilePath, szPgnFile, EccoApi);
-            } else if (strnicmp(szFilePath + nPathLen, ".CHE", 4) == 0) {
+            } else if (_strnicmp(szFilePath + nPathLen, ".CHE", 4) == 0) {
                 strncpy(szPgnFile, szFilePath, nPathLen);
                 strcpy(szPgnFile + nPathLen, ".PGN");
                 Che2Pgn(szFilePath, szPgnFile, EccoApi);
-            } else if (strnicmp(szFilePath + nPathLen, ".CHN", 4) == 0) {
+            } else if (_strnicmp(szFilePath + nPathLen, ".CHN", 4) == 0) {
                 strncpy(szPgnFile, szFilePath, nPathLen);
                 strcpy(szPgnFile + nPathLen, ".PGN");
                 Chn2Pgn(szFilePath, szPgnFile, EccoApi);
-            } else if (strnicmp(szFilePath + nPathLen, ".CCM", 4) == 0) {
+            } else if (_strnicmp(szFilePath + nPathLen, ".CCM", 4) == 0) {
                 strncpy(szPgnFile, szFilePath, nPathLen);
                 strcpy(szPgnFile + nPathLen, ".PGN");
                 Ccm2Pgn(szFilePath, szPgnFile, EccoApi);
@@ -153,7 +153,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     bi.hwndOwner = NULL;
     bi.pidlRoot = NULL;
     bi.pszDisplayName = NULL;
-    bi.lpszTitle = "ÇëÑ¡ÔñÏóÆåÑİ²¥ÊÒÆåÆ×(*.XQF)¡¢ŞÄÌìÆåÆ×(*.MXQ)¡¢QQÏóÆåÆåÆ×(*.CHE)¡¢ÁªÖÚÏóÆåÆåÆ×(*.CHN)ºÍÖĞÓÎÏóÆåÆåÆ×(*.CCM)ËùÔÚµÄÎÄ¼ş¼Ğ";
+    bi.lpszTitle = "è¯·é€‰æ‹©è±¡æ£‹æ¼”æ’­å®¤æ£‹è°±(*.XQF)ã€å¼ˆå¤©æ£‹è°±(*.MXQ)ã€QQè±¡æ£‹æ£‹è°±(*.CHE)ã€è”ä¼—è±¡æ£‹æ£‹è°±(*.CHN)å’Œä¸­æ¸¸è±¡æ£‹æ£‹è°±(*.CCM)æ‰€åœ¨çš„æ–‡ä»¶å¤¹";
     bi.ulFlags = BIF_RETURNONLYFSDIRS;
     bi.lpfn = NULL;
     bi.lParam = NULL;
@@ -166,8 +166,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         EccoApi.Startup(szLibEccoFile);
         SearchFolder(szPath, EccoApi);
         EccoApi.Shutdown();
-        MessageBox(NULL, "ÏóÆåÑİ²¥ÊÒÆåÆ×(*.XQF)¡¢ŞÄÌìÆåÆ×(*.MXQ)¡¢QQÏóÆåÆåÆ×(*.CHE)¡¢ÁªÖÚÏóÆåÆåÆ×(*.CHN)ºÍÖĞÓÎÏóÆåÆåÆ×(*.CCM)ÒÑÈ«²¿×ª»»Îª¿ÉÒÆÖ²ÆåÆ×(*.PGN)¡£",
-            "ÏóÆåÆåÆ×ÅúÁ¿×ª»»¹¤¾ß", MB_ICONINFORMATION);
+        MessageBox(NULL, "è±¡æ£‹æ¼”æ’­å®¤æ£‹è°±(*.XQF)ã€å¼ˆå¤©æ£‹è°±(*.MXQ)ã€QQè±¡æ£‹æ£‹è°±(*.CHE)ã€è”ä¼—è±¡æ£‹æ£‹è°±(*.CHN)å’Œä¸­æ¸¸è±¡æ£‹æ£‹è°±(*.CCM)å·²å…¨éƒ¨è½¬æ¢ä¸ºå¯ç§»æ¤æ£‹è°±(*.PGN)ã€‚",
+            "è±¡æ£‹æ£‹è°±æ‰¹é‡è½¬æ¢å·¥å…·", MB_ICONINFORMATION);
     }
     return 0;
 }

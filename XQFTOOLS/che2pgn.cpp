@@ -80,12 +80,12 @@ int Che2Pgn(const char* szCheFile, const char* szPgnFile, const EccoApiStruct& E
         ReadInt(fp);
 
         mv = MOVE(COORD_XY(xSrc, ySrc), COORD_XY(xDst, yDst));
-        mv &= 0xffff; // ·ÀÖ¹TryMoveÊ±Êý×éÔ½½ç
+        mv &= 0xffff; // é˜²æ­¢TryMoveæ—¶æ•°ç»„è¶Šç•Œ.
         pgn.nMaxMove++;
         if (pgn.nMaxMove <= 20) {
             dwFileMove[pgn.nMaxMove - 1] = Move2File(mv, pos);
         }
-        // QQÏóÆåÔÊÐí°Ñ½«³Ôµô£¬µ«ElephantEye²»ÔÊÐí£¬ËùÒÔÌø¹ý·Ç·¨×Å·¨
+        // QQè±¡æ£‹å…è®¸æŠŠå°†åƒæŽ‰ï¼Œä½†ElephantEyeä¸å…è®¸ï¼Œæ‰€ä»¥è·³è¿‡éžæ³•ç€æ³•.
         if (TryMove(pos, nStatus, mv)) {
             pgn.wmvMoveTable[pgn.nMaxMove] = mv;
         } else {

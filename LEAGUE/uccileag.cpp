@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 UCCILEAG - a Computer Chinese Chess League (UCCI Engine League) Emulator
 Designed by Morning Yellow, Version: 3.8, Last Modified: Dec. 2011
 Copyright (C) 2004-2011 www.xqbase.com
@@ -25,1519 +25,1568 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <string.h>
 #include <time.h>
 #ifdef _WIN32
-  #include <windows.h>
+#include <windows.h>
 #else
-  #include <dlfcn.h>
+#include <dlfcn.h>
 #endif
 #include "../base/base2.h"
 #include "../base/parse.h"
 #include "../base/pipe.h"
 #include "../base/wsockbas.h"
-#include "../codec/base64/base64.h"
-#include "../eleeye/position.h"
 #include "../cchess/cchess.h"
 #include "../cchess/ecco.h"
 #include "../cchess/pgnfile.h"
+#include "../codec/base64/base64.h"
+#include "../eleeye/position.h"
 
-const int MAX_CHAR = LINE_INPUT_MAX_CHAR; // ÊäÈë±¨¸æµÄ×î´óĞĞ³¤¶È£¬Í¬Ê±Ò²ÊÇÒıÇæ·¢ËÍºÍ½ÓÊÕĞÅÏ¢µÄ×î´óĞĞ³¤¶È
-const int MAX_ROBIN = 36;                 // ×î¶àµÄÑ­»·
-const int MAX_TEAM = 32;                  // ×î¶àµÄ²ÎÈü¶ÓÊı
-const int MAX_PROCESSORS = 32;            // ×î¶àµÄ´¦ÀíÆ÷Êı
-const int QUEUE_LEN = 64;                 // ´¦ÀíÆ÷¶ÓÁĞ³¤¶È(×îºÃÊÇ´¦ÀíÆ÷ÊıµÄÁ½±¶)
+const int MAX_CHAR = LINE_INPUT_MAX_CHAR; // è¾“å…¥æŠ¥å‘Šçš„æœ€å¤§è¡Œé•¿åº¦ï¼ŒåŒæ—¶ä¹Ÿæ˜¯å¼•æ“å‘é€å’Œæ¥æ”¶ä¿¡æ¯çš„æœ€å¤§è¡Œé•¿åº¦.
+const int MAX_ROBIN = 36; // æœ€å¤šçš„å¾ªç¯.
+const int MAX_TEAM = 32; // æœ€å¤šçš„å‚èµ›é˜Ÿæ•°.
+const int MAX_PROCESSORS = 32; // æœ€å¤šçš„å¤„ç†å™¨æ•°.
+const int QUEUE_LEN = 64; // å¤„ç†å™¨é˜Ÿåˆ—é•¿åº¦(æœ€å¥½æ˜¯å¤„ç†å™¨æ•°çš„ä¸¤å€)
 
-const char *const cszRobinChar = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const char* const cszRobinChar = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// ½ø³ÌÎÄ¼şµÄ¼ÇÂ¼½á¹¹
+// è¿›ç¨‹æ–‡ä»¶çš„è®°å½•ç»“æ„.
 struct CheckStruct {
-  int mv, nTimer;
+    int mv, nTimer;
 }; // chk
 
-// ½ø³ÌÎÄ¼şµÄ¿ØÖÆ½á¹¹
+// è¿›ç¨‹æ–‡ä»¶çš„æ§åˆ¶ç»“æ„.
 struct CheckFileStruct {
-  FILE *fp;
-  int nLen, nPtr;
-  bool Eof(void) {                    // ÅĞ¶Ï½ø³ÌÎÄ¼şÊÇ·ñ¶ÁÍê
-    return nPtr == nLen;
-  }
-  void Open(const char *szFileName);  // ´ò¿ª½ø³ÌÎÄ¼ş
-  void Close(void) {                  // ¹Ø±Õ½ø³ÌÎÄ¼ş
-    fclose(fp);
-  }
-  CheckStruct Read(void) {            // ¶Á½ø³ÌÎÄ¼şµÄ¼ÇÂ¼
-    CheckStruct chkRecord;
-    fseek(fp, nPtr * sizeof(CheckStruct), SEEK_SET);
-    fread(&chkRecord, sizeof(CheckStruct), 1, fp);
-    nPtr ++;
-    return chkRecord;
-  }
-  void Write(CheckStruct chkRecord) { // Ğ´½ø³ÌÎÄ¼şµÄ¼ÇÂ¼
-    fseek(fp, nPtr * sizeof(CheckStruct), SEEK_SET);
-    fwrite(&chkRecord, sizeof(CheckStruct), 1, fp);
-    fflush(fp);
-    nPtr ++;
-    nLen ++;
-  }
+    FILE* fp;
+    int nLen, nPtr;
+    bool Eof(void)
+    { // åˆ¤æ–­è¿›ç¨‹æ–‡ä»¶æ˜¯å¦è¯»å®Œ.
+        return nPtr == nLen;
+    }
+    void Open(const char* szFileName); // æ‰“å¼€è¿›ç¨‹æ–‡ä»¶.
+    void Close(void)
+    { // å…³é—­è¿›ç¨‹æ–‡ä»¶.
+        fclose(fp);
+    }
+    CheckStruct Read(void)
+    { // è¯»è¿›ç¨‹æ–‡ä»¶çš„è®°å½•.
+        CheckStruct chkRecord;
+        fseek(fp, nPtr * sizeof(CheckStruct), SEEK_SET);
+        fread(&chkRecord, sizeof(CheckStruct), 1, fp);
+        nPtr++;
+        return chkRecord;
+    }
+    void Write(CheckStruct chkRecord)
+    { // å†™è¿›ç¨‹æ–‡ä»¶çš„è®°å½•.
+        fseek(fp, nPtr * sizeof(CheckStruct), SEEK_SET);
+        fwrite(&chkRecord, sizeof(CheckStruct), 1, fp);
+        fflush(fp);
+        nPtr++;
+        nLen++;
+    }
 };
 
-// ´ò¿ª½ø³ÌÎÄ¼ş£¬Èç¹ûÎÄ¼ş²»´æÔÚ£¬ÄÇÃ´ÒªĞÂ½¨Ò»¸ö¿ÕÎÄ¼ş²¢ÖØĞÂ´ò¿ª
-void CheckFileStruct::Open(const char *szFileName) {
-  fp = fopen(szFileName, "r+b");
-  if (fp == NULL) {
-    fp = fopen(szFileName, "wb");
-    if (fp == NULL) {
-      printf("´íÎó£ºÎŞ·¨½¨Á¢±ÈÈü¹ı³ÌÎÄ¼ş\"%s\"!\n", szFileName);
-      exit(EXIT_FAILURE);
-    }
-    fclose(fp);
+// æ‰“å¼€è¿›ç¨‹æ–‡ä»¶ï¼Œå¦‚æœæ–‡ä»¶ä¸å­˜åœ¨ï¼Œé‚£ä¹ˆè¦æ–°å»ºä¸€ä¸ªç©ºæ–‡ä»¶å¹¶é‡æ–°æ‰“å¼€.
+void CheckFileStruct::Open(const char* szFileName)
+{
     fp = fopen(szFileName, "r+b");
     if (fp == NULL) {
-      printf("´íÎó£ºÎŞ·¨´ò¿ª±ÈÈü¹ı³ÌÎÄ¼ş\"%s\"!\n", szFileName);
-      exit(EXIT_FAILURE);
+        fp = fopen(szFileName, "wb");
+        if (fp == NULL) {
+            printf("E: can't open \"%s\"!\n", szFileName);
+            exit(EXIT_FAILURE);
+        }
+        fclose(fp);
+        fp = fopen(szFileName, "r+b");
+        if (fp == NULL) {
+            printf("E: can't open \"%s\"!\n", szFileName);
+            exit(EXIT_FAILURE);
+        }
+        nLen = nPtr = 0;
+    } else {
+        fseek(fp, 0, SEEK_END);
+        nLen = ftell(fp) / sizeof(CheckStruct);
+        nPtr = 0;
     }
-    nLen = nPtr = 0;
-  } else {
-    fseek(fp, 0, SEEK_END);
-    nLen = ftell(fp) / sizeof(CheckStruct);
-    nPtr = 0;
-  }
 }
 
-// ²ÎÈü¶Ó½á¹¹
+// å‚èµ›é˜Ÿç»“æ„.
 struct TeamStruct {
-  uint32_t dwAbbr;
-  int nEloValue, nKValue;
-  char szEngineName[MAX_CHAR], szEngineFile[MAX_CHAR];
-  char szOptionFile[MAX_CHAR], szUrl[MAX_CHAR], szGoParam[MAX_CHAR];
-  int nWin, nDraw, nLoss, nScore;
+    uint32_t dwAbbr;
+    int nEloValue, nKValue;
+    char szEngineName[MAX_CHAR], szEngineFile[MAX_CHAR];
+    char szOptionFile[MAX_CHAR], szUrl[MAX_CHAR], szGoParam[MAX_CHAR];
+    int nWin, nDraw, nLoss, nScore;
 };
 
-// ²ÎÈü¶ÓÁĞ±í
+// å‚èµ›é˜Ÿåˆ—è¡¨.
 static TeamStruct TeamList[MAX_TEAM];
 
-// ÁªÈüÈ«¾Ö±äÁ¿
+// è”èµ›å…¨å±€å˜é‡.
 static struct {
-  volatile bool bRunning;
-  int nTeamNum, nRobinNum, nRoundNum, nGameNum, nRemainProcs;
-  int nInitTime, nIncrTime, nStopTime, nStandardCpuTime, nNameLen;
-  bool bPromotion;
-  char szEvent[MAX_CHAR], szSite[MAX_CHAR];
-  char szRobinFens[MAX_ROBIN][MAX_CHAR];
-  EccoApiStruct EccoApi;
+    volatile bool bRunning;
+    int nTeamNum, nRobinNum, nRoundNum, nGameNum, nRemainProcs;
+    int nInitTime, nIncrTime, nStopTime, nStandardCpuTime, nNameLen;
+    bool bPromotion;
+    char szEvent[MAX_CHAR], szSite[MAX_CHAR];
+    char szRobinFens[MAX_ROBIN][MAX_CHAR];
+    EccoApiStruct EccoApi;
 } League;
 
-// Ñ­»·Èü¶ÔÕóÍ¼
+// å¾ªç¯èµ›å¯¹é˜µå›¾.
 static char RobinTable[2 * MAX_TEAM - 2][MAX_TEAM / 2][2];
 
-// Ö±²¥È«¾Ö±äÁ¿
+// ç›´æ’­å…¨å±€å˜é‡.
 static struct {
-  int8_t cResult[MAX_ROBIN][2 * MAX_TEAM - 2][MAX_TEAM / 2];
-  char szHost[MAX_CHAR], szPath[MAX_CHAR], szPassword[MAX_CHAR];
-  char szExt[MAX_CHAR], szCounter[MAX_CHAR], szHeader[MAX_CHAR], szFooter[MAX_CHAR];
-  char szProxyHost[MAX_CHAR], szProxyUser[MAX_CHAR], szProxyPassword[MAX_CHAR];
-  int nPort, nRefresh, nInterval, nProxyPort;
-  int64_t llTime;
+    int8_t cResult[MAX_ROBIN][2 * MAX_TEAM - 2][MAX_TEAM / 2];
+    char szHost[MAX_CHAR], szPath[MAX_CHAR], szPassword[MAX_CHAR];
+    char szExt[MAX_CHAR], szCounter[MAX_CHAR], szHeader[MAX_CHAR], szFooter[MAX_CHAR];
+    char szProxyHost[MAX_CHAR], szProxyUser[MAX_CHAR], szProxyPassword[MAX_CHAR];
+    int nPort, nRefresh, nInterval, nProxyPort;
+    int64_t llTime;
 } Live;
 
-static const char *const cszContent1 =
-    "--[UCCI-LIVE-UPLOAD-BOUNDARY]" "\r\n"
-    "Content-Disposition: form-data; name=\"upload\"; filename=\"upload.txt\"" "\r\n"
-    "Content-Type: text/plain" "\r\n"
-    "\r\n";
-static const char *const cszContentFormat2 =
-    "\r\n"
-    "--[UCCI-LIVE-UPLOAD-BOUNDARY]" "\r\n"
-    "Content-Disposition: form-data; name=\"filename\"" "\r\n"
-    "\r\n"
-    "%s" "\r\n"
-    "--[UCCI-LIVE-UPLOAD-BOUNDARY]" "\r\n"
-    "Content-Disposition: form-data; name=\"password\"" "\r\n"
-    "\r\n"
-    "%s" "\r\n"
-    "--[UCCI-LIVE-UPLOAD-BOUNDARY]--" "\r\n";
-static const char *const cszPostFormat =
-    "POST %s HTTP/1.1" "\r\n"
-    "Content-Type: multipart/form-data; boundary=[UCCI-LIVE-UPLOAD-BOUNDARY]" "\r\n"
-    "Host: %s:%d" "\r\n"
-    "Content-Length: %d" "\r\n"
-    "\r\n";
-static const char *const cszProxyFormat =
-    "POST http://%s:%d%s HTTP/1.1" "\r\n"
-    "Content-Type: multipart/form-data; boundary=[UCCI-LIVE-UPLOAD-BOUNDARY]" "\r\n"
-    "Host: %s:%d" "\r\n"
-    "Content-Length: %d" "\r\n"
-    "\r\n";
-static const char *const cszAuthFormat =
-    "POST http://%s:%d%s HTTP/1.1" "\r\n"
-    "Content-Type: multipart/form-data; boundary=[UCCI-LIVE-UPLOAD-BOUNDARY]" "\r\n"
-    "Host: %s:%d" "\r\n"
-    "Content-Length: %d" "\r\n"
-    "Proxy-Authorization: Basic %s" "\r\n"
-    "\r\n";
+static const char* const cszContent1 = "--[UCCI-LIVE-UPLOAD-BOUNDARY]"
+                                       "\r\n"
+                                       "Content-Disposition: form-data; name=\"upload\"; filename=\"upload.txt\""
+                                       "\r\n"
+                                       "Content-Type: text/plain"
+                                       "\r\n"
+                                       "\r\n";
+static const char* const cszContentFormat2 = "\r\n"
+                                             "--[UCCI-LIVE-UPLOAD-BOUNDARY]"
+                                             "\r\n"
+                                             "Content-Disposition: form-data; name=\"filename\""
+                                             "\r\n"
+                                             "\r\n"
+                                             "%s"
+                                             "\r\n"
+                                             "--[UCCI-LIVE-UPLOAD-BOUNDARY]"
+                                             "\r\n"
+                                             "Content-Disposition: form-data; name=\"password\""
+                                             "\r\n"
+                                             "\r\n"
+                                             "%s"
+                                             "\r\n"
+                                             "--[UCCI-LIVE-UPLOAD-BOUNDARY]--"
+                                             "\r\n";
+static const char* const cszPostFormat = "POST %s HTTP/1.1"
+                                         "\r\n"
+                                         "Content-Type: multipart/form-data; boundary=[UCCI-LIVE-UPLOAD-BOUNDARY]"
+                                         "\r\n"
+                                         "Host: %s:%d"
+                                         "\r\n"
+                                         "Content-Length: %d"
+                                         "\r\n"
+                                         "\r\n";
+static const char* const cszProxyFormat = "POST http://%s:%d%s HTTP/1.1"
+                                          "\r\n"
+                                          "Content-Type: multipart/form-data; boundary=[UCCI-LIVE-UPLOAD-BOUNDARY]"
+                                          "\r\n"
+                                          "Host: %s:%d"
+                                          "\r\n"
+                                          "Content-Length: %d"
+                                          "\r\n"
+                                          "\r\n";
+static const char* const cszAuthFormat = "POST http://%s:%d%s HTTP/1.1"
+                                         "\r\n"
+                                         "Content-Type: multipart/form-data; boundary=[UCCI-LIVE-UPLOAD-BOUNDARY]"
+                                         "\r\n"
+                                         "Host: %s:%d"
+                                         "\r\n"
+                                         "Content-Length: %d"
+                                         "\r\n"
+                                         "Proxy-Authorization: Basic %s"
+                                         "\r\n"
+                                         "\r\n";
 
-static void BlockSend(int nSocket, const char *lpBuffer, int nLen, int nTimeOut) {
-  int nBytesWritten, nOffset;
-  int64_t llTime;
+static void BlockSend(int nSocket, const char* lpBuffer, int nLen, int nTimeOut)
+{
+    int nBytesWritten, nOffset;
+    int64_t llTime;
 
-  nOffset = 0;
-  llTime = GetTime();
-  while (nLen > 0 && (int) (GetTime() - llTime) < nTimeOut) {
-    nBytesWritten = WSBSend(nSocket, lpBuffer + nOffset, nLen);
-    if (nBytesWritten == 0) {
-      Idle();
-    } else if (nBytesWritten < 0) {
-      return;
+    nOffset = 0;
+    llTime = GetTime();
+    while (nLen > 0 && (int)(GetTime() - llTime) < nTimeOut) {
+        nBytesWritten = WSBSend(nSocket, lpBuffer + nOffset, nLen);
+        if (nBytesWritten == 0) {
+            Idle();
+        } else if (nBytesWritten < 0) {
+            return;
+        }
+        nOffset += nBytesWritten;
+        nLen -= nBytesWritten;
     }
-    nOffset += nBytesWritten;
-    nLen -= nBytesWritten;
-  }
 }
 
 const bool FORCE_PUBLISH = true;
 
-static void HttpUpload(const char *szFileName) {
-  FILE *fpUpload;
-  int nSocket, nContentLen1, nFileLen, nContentLen2, nPostLen;
-  char szPost[MAX_CHAR * 4], szContent2[MAX_CHAR * 4], szAuth[MAX_CHAR], szAuthB64[MAX_CHAR];
+static void HttpUpload(const char* szFileName)
+{
+    FILE* fpUpload;
+    int nSocket, nContentLen1, nFileLen, nContentLen2, nPostLen;
+    char szPost[MAX_CHAR * 4], szContent2[MAX_CHAR * 4], szAuth[MAX_CHAR], szAuthB64[MAX_CHAR];
 
-  fpUpload = fopen(szFileName, "rb");
-  if (fpUpload == NULL) {
-    return;
-  }
-  if (Live.nProxyPort == 0) {
-    nSocket = WSBConnect(Live.szHost, Live.nPort);
-  } else {
-    nSocket = WSBConnect(Live.szProxyHost, Live.nProxyPort);
-  }
-  if (nSocket == INVALID_SOCKET) {
-    fclose(fpUpload);
-    return;
-  }
-  fseek(fpUpload, 0, SEEK_END);
-  nContentLen1 = strlen(cszContent1);
-  nFileLen = ftell(fpUpload);
-  nContentLen2 = sprintf(szContent2, cszContentFormat2, szFileName, Live.szPassword);
-  if (Live.nProxyPort == 0) {
-    nPostLen = sprintf(szPost, cszPostFormat, Live.szPath, Live.szHost, Live.nPort, nContentLen1 + nFileLen + nContentLen2);
-  } else {
-    if (Live.szProxyUser[0] == '\0') {
-      nPostLen = sprintf(szPost, cszProxyFormat, Live.szHost, Live.nPort,
-          Live.szPath, Live.szHost, Live.nPort, nContentLen1 + nFileLen + nContentLen2);
-    } else {
-      nPostLen = sprintf(szAuth, "%s:%s", Live.szProxyUser, Live.szProxyPassword);
-      B64Enc(szAuthB64, szAuth, nPostLen, 0);
-      nPostLen = sprintf(szPost, cszAuthFormat, Live.szHost, Live.nPort,
-          Live.szPath, Live.szHost, Live.nPort, nContentLen1 + nFileLen + nContentLen2, szAuthB64);
+    fpUpload = fopen(szFileName, "rb");
+    if (fpUpload == NULL) {
+        return;
     }
-  }
-  // ÒÔ×èÈû·½Ê½·¢ËÍÊı¾İ£¬³¬Ê±Îª10Ãë£¬ÕâÀï»º³åÇø×î´óÊÇ16K£¬ËùÒÔÍøËÙĞ¡ÓÚ1.6KB/sÊ±¾ÍÈİÒ×³ö´í
-  BlockSend(nSocket, szPost, nPostLen, 10000);
-  BlockSend(nSocket, cszContent1, nContentLen1, 10000);
-  fseek(fpUpload, 0, SEEK_SET);
-  while (nFileLen > 0) {
-    nPostLen = MIN(nFileLen, MAX_CHAR * 4);
-    fread(szPost, nPostLen, 1, fpUpload);
+    if (Live.nProxyPort == 0) {
+        nSocket = WSBConnect(Live.szHost, Live.nPort);
+    } else {
+        nSocket = WSBConnect(Live.szProxyHost, Live.nProxyPort);
+    }
+    if (nSocket == INVALID_SOCKET) {
+        fclose(fpUpload);
+        return;
+    }
+    fseek(fpUpload, 0, SEEK_END);
+    nContentLen1 = strlen(cszContent1);
+    nFileLen = ftell(fpUpload);
+    nContentLen2 = sprintf(szContent2, cszContentFormat2, szFileName, Live.szPassword);
+    if (Live.nProxyPort == 0) {
+        nPostLen = sprintf(szPost, cszPostFormat, Live.szPath, Live.szHost, Live.nPort, nContentLen1 + nFileLen + nContentLen2);
+    } else {
+        if (Live.szProxyUser[0] == '\0') {
+            nPostLen = sprintf(szPost, cszProxyFormat, Live.szHost, Live.nPort,
+                Live.szPath, Live.szHost, Live.nPort, nContentLen1 + nFileLen + nContentLen2);
+        } else {
+            nPostLen = sprintf(szAuth, "%s:%s", Live.szProxyUser, Live.szProxyPassword);
+            B64Enc(szAuthB64, szAuth, nPostLen, 0);
+            nPostLen = sprintf(szPost, cszAuthFormat, Live.szHost, Live.nPort,
+                Live.szPath, Live.szHost, Live.nPort, nContentLen1 + nFileLen + nContentLen2, szAuthB64);
+        }
+    }
+    // ä»¥é˜»å¡æ–¹å¼å‘é€æ•°æ®ï¼Œè¶…æ—¶ä¸º10ç§’ï¼Œè¿™é‡Œç¼“å†²åŒºæœ€å¤§æ˜¯16Kï¼Œæ‰€ä»¥ç½‘é€Ÿå°äº1.6KB/sæ—¶å°±å®¹æ˜“å‡ºé”™.
     BlockSend(nSocket, szPost, nPostLen, 10000);
-    nFileLen -= nPostLen;
-  }
-  BlockSend(nSocket, szContent2, nContentLen2, 10000);
-  WSBDisconnect(nSocket);
-  fclose(fpUpload);
+    BlockSend(nSocket, cszContent1, nContentLen1, 10000);
+    fseek(fpUpload, 0, SEEK_SET);
+    while (nFileLen > 0) {
+        nPostLen = MIN(nFileLen, MAX_CHAR * 4);
+        fread(szPost, nPostLen, 1, fpUpload);
+        BlockSend(nSocket, szPost, nPostLen, 10000);
+        nFileLen -= nPostLen;
+    }
+    BlockSend(nSocket, szContent2, nContentLen2, 10000);
+    WSBDisconnect(nSocket);
+    fclose(fpUpload);
 }
 
-static const char *const cszResultDigit[4] = {
-  "-", "(1-0)", "(1/2-1/2)", "(0-1)"
+static const char* const cszResultDigit[4] = {
+    "-", "(1-0)", "(1/2-1/2)", "(0-1)"
 };
 
-static bool SkipUpload(bool bForce) {
-  if ((int) (GetTime() - Live.llTime) < Live.nInterval) {
-    // Èç¹ûÓëÉÏ´ÎÉÏ´«¼ä¸ôÌ«½ü£¬ÄÇÃ´Ôİ»ºÉÏ´«
-    if (!bForce) {
-      return true;
+static bool SkipUpload(bool bForce)
+{
+    if ((int)(GetTime() - Live.llTime) < Live.nInterval) {
+        // å¦‚æœä¸ä¸Šæ¬¡ä¸Šä¼ é—´éš”å¤ªè¿‘ï¼Œé‚£ä¹ˆæš‚ç¼“ä¸Šä¼ .
+        if (!bForce) {
+            return true;
+        }
+        // å¦‚æœå¼ºåˆ¶ä¸Šä¼ ï¼Œé‚£ä¹ˆå¿…é¡»ç­‰å¾….
+        while ((int)(GetTime() - Live.llTime) < Live.nInterval) {
+            Idle();
+        }
     }
-    // Èç¹ûÇ¿ÖÆÉÏ´«£¬ÄÇÃ´±ØĞëµÈ´ı
-    while ((int) (GetTime() - Live.llTime) < Live.nInterval) {
-      Idle();
-    }
-  }
-  Live.llTime = GetTime();
-  return false;
+    Live.llTime = GetTime();
+    return false;
 }
 
-static void PrintFile(FILE *fp, const char *szFileName) {
-  char szLineStr[MAX_CHAR];
-  char *lp;
-  FILE *fpEmbedded;
-  fpEmbedded = fopen(szFileName, "rt");
-  if (fpEmbedded != NULL) {
-    while (fgets(szLineStr, MAX_CHAR, fpEmbedded) != NULL) {
-      lp = strchr(szLineStr, '\n');
-      if (lp != NULL) {
-        *lp = '\0';
-      }
-      fprintf(fp, "%s\n", szLineStr);
+static void PrintFile(FILE* fp, const char* szFileName)
+{
+    char szLineStr[MAX_CHAR];
+    char* lp;
+    FILE* fpEmbedded;
+    fpEmbedded = fopen(szFileName, "rt");
+    if (fpEmbedded != NULL) {
+        while (fgets(szLineStr, MAX_CHAR, fpEmbedded) != NULL) {
+            lp = strchr(szLineStr, '\n');
+            if (lp != NULL) {
+                *lp = '\0';
+            }
+            fprintf(fp, "%s\n", szLineStr);
+        }
+        fclose(fpEmbedded);
     }
-    fclose(fpEmbedded);
-  }
 }
 
-static void PublishLeague(void) {
-  int nSortList[MAX_TEAM];
-  int i, j, k, nLastRank ,nLastScore, nResult;
-  uint32_t dwHome, dwAway;
-  TeamStruct *lpTeam;
-  char szEmbeddedFile[MAX_CHAR];
-  char szUploadFile[16];
-  FILE *fp;
+static void PublishLeague(void)
+{
+    int nSortList[MAX_TEAM];
+    int i, j, k, nLastRank, nLastScore, nResult;
+    uint32_t dwHome, dwAway;
+    TeamStruct* lpTeam;
+    char szEmbeddedFile[MAX_CHAR];
+    char szUploadFile[16];
+    FILE* fp;
 
-  SkipUpload(FORCE_PUBLISH); // Ê¼ÖÕ·µ»Ø false
-  if (Live.nPort == 0) {
-    return;
-  }
-  strcpy(szUploadFile, "index.");
-  strncpy(szUploadFile + 6, Live.szExt, 6);
-  szUploadFile[12] = '\0';
-  fp = fopen(szUploadFile, "wt");
-  if (fp == NULL) {
-    return;
-  }
-
-  // ÏÔÊ¾Ò³Ã¼
-  fprintf(fp, "<html>\n");
-  fprintf(fp, "  <head>\n");
-  fprintf(fp, "    <meta name=\"GENERATOR\" content=\"UCCIÒıÇæÁªÈüÔÚÏßÖ±²¥ÏµÍ³\">\n");
-  fprintf(fp, "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=gb_2312-80\">\n");
-  fprintf(fp, "    <title>%s ÔÚÏßÖ±²¥</title>\n", League.szEvent);
-  fprintf(fp, "  </head>\n");
-  fprintf(fp, "  <body background=\"background.gif\">\n");
-  fprintf(fp, "    <p align=\"center\">\n");
-  fprintf(fp, "      <font size=\"6\" face=\"Á¥Êé\">%s ÔÚÏßÖ±²¥</font>\n", League.szEvent);
-  fprintf(fp, "    </p>\n");
-  if (Live.szHeader[0] != '\0') {
-    LocatePath(szEmbeddedFile, Live.szHeader);
-    PrintFile(fp, szEmbeddedFile);
-  }
-  fprintf(fp, "    <p align=\"center\">\n");
-  fprintf(fp, "      <font size=\"4\" face=\"¿¬Ìå_GB2312\">\n");
-  fprintf(fp, "        <strong>ÅÅÃû</strong>\n");
-  fprintf(fp, "      </font>\n");
-  fprintf(fp, "    </p>\n");
-  fprintf(fp, "    <table align=\"center\" border=\"1\">\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <th>ÅÅÃû</th>\n");
-  fprintf(fp, "        <th>ËõĞ´</th>\n");
-  fprintf(fp, "        <th>ÒıÇæÃû³Æ</th>\n");
-  fprintf(fp, "        <th>µÈ¼¶·Ö</th>\n");
-  fprintf(fp, "        <th>KÖµ</th>\n");
-  fprintf(fp, "        <th>¾ÖÊı</th>\n");
-  fprintf(fp, "        <th>Ê¤</th>\n");
-  fprintf(fp, "        <th>ºÍ</th>\n");
-  fprintf(fp, "        <th>¸º</th>\n");
-  fprintf(fp, "        <th>»ı·Ö</th>\n");
-  fprintf(fp, "      </tr>\n");
-
-  // ÏÔÊ¾ÅÅÃû£¬¿É²ÎÔÄ"PrintRankList()"
-  for (i = 0; i < League.nTeamNum; i ++) {
-    nSortList[i] = i;
-  }
-  for (i = 0; i < League.nTeamNum - 1; i ++) {
-    for (j = League.nTeamNum - 1; j > i; j --) {
-      if (TeamList[nSortList[j - 1]].nScore < TeamList[nSortList[j]].nScore) {
-        SWAP(nSortList[j - 1], nSortList[j]);
-      }
+    SkipUpload(FORCE_PUBLISH); // å§‹ç»ˆè¿”å› false
+    if (Live.nPort == 0) {
+        return;
     }
-  }
-  nLastRank = nLastScore = 0;
-  for (i = 0; i < League.nTeamNum; i ++) {
-    lpTeam = TeamList + nSortList[i];
-    if (lpTeam->nScore != nLastScore) {
-      nLastRank = i;
-      nLastScore = lpTeam->nScore;
+    strcpy(szUploadFile, "index.");
+    strncpy(szUploadFile + 6, Live.szExt, 6);
+    szUploadFile[12] = '\0';
+    fp = fopen(szUploadFile, "wt");
+    if (fp == NULL) {
+        return;
     }
+
+    // æ˜¾ç¤ºé¡µçœ‰.
+    fprintf(fp, "<html>\n");
+    fprintf(fp, "  <head>\n");
+    fprintf(fp, "    <meta name=\"GENERATOR\" content=\"UCCIå¼•æ“è”èµ›åœ¨çº¿ç›´æ’­ç³»ç»Ÿ\">\n");
+    fprintf(fp, "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=gb_2312-80\">\n");
+    fprintf(fp, "    <title>%s åœ¨çº¿ç›´æ’­</title>\n", League.szEvent);
+    fprintf(fp, "  </head>\n");
+    fprintf(fp, "  <body background=\"background.gif\">\n");
+    fprintf(fp, "    <p align=\"center\">\n");
+    fprintf(fp, "      <font size=\"6\" face=\"éš¶ä¹¦\">%s åœ¨çº¿ç›´æ’­</font>\n", League.szEvent);
+    fprintf(fp, "    </p>\n");
+    if (Live.szHeader[0] != '\0') {
+        LocatePath(szEmbeddedFile, Live.szHeader);
+        PrintFile(fp, szEmbeddedFile);
+    }
+    fprintf(fp, "    <p align=\"center\">\n");
+    fprintf(fp, "      <font size=\"4\" face=\"æ¥·ä½“_GB2312\">\n");
+    fprintf(fp, "        <strong>æ’å</strong>\n");
+    fprintf(fp, "      </font>\n");
+    fprintf(fp, "    </p>\n");
+    fprintf(fp, "    <table align=\"center\" border=\"1\">\n");
     fprintf(fp, "      <tr>\n");
-    fprintf(fp, "        <td align=\"center\">%d</td>\n", nLastRank + 1);
-    fprintf(fp, "        <td align=\"center\">%.3s</td>\n", (const char *) &lpTeam->dwAbbr);
-    fprintf(fp, "        <td align=\"center\">\n");
-    if (lpTeam->szUrl[0] == '\0') {
-      fprintf(fp, "          %s\n", lpTeam->szEngineName);
-    } else {
-      fprintf(fp, "          <a href=\"%s\" target=\"_blank\">%s</a>\n", lpTeam->szUrl, lpTeam->szEngineName);
-    }
-    fprintf(fp, "        </td>\n");
-    fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nEloValue);
-    fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nKValue);
-    fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nWin + lpTeam->nDraw + lpTeam->nLoss);
-    fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nWin);
-    fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nDraw);
-    fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nLoss);
-    fprintf(fp, "        <td align=\"center\">%d%s</td>\n", lpTeam->nScore / 2, lpTeam->nScore % 2 == 0 ? "" : ".5");
+    fprintf(fp, "        <th>æ’å</th>\n");
+    fprintf(fp, "        <th>ç¼©å†™</th>\n");
+    fprintf(fp, "        <th>å¼•æ“åç§°</th>\n");
+    fprintf(fp, "        <th>ç­‰çº§åˆ†</th>\n");
+    fprintf(fp, "        <th>Kå€¼</th>\n");
+    fprintf(fp, "        <th>å±€æ•°</th>\n");
+    fprintf(fp, "        <th>èƒœ</th>\n");
+    fprintf(fp, "        <th>å’Œ</th>\n");
+    fprintf(fp, "        <th>è´Ÿ</th>\n");
+    fprintf(fp, "        <th>ç§¯åˆ†</th>\n");
     fprintf(fp, "      </tr>\n");
-  }
 
-  // ÏÔÊ¾ÄÚÈİ
-  fprintf(fp, "    </table>\n");
-  fprintf(fp, "    <p align=\"center\">\n");
-  fprintf(fp, "      <font size=\"4\" face=\"¿¬Ìå_GB2312\">\n");
-  fprintf(fp, "        <strong>Èü³Ì</strong>\n");
-  fprintf(fp, "      </font>\n");
-  fprintf(fp, "    </p>\n");
-  fprintf(fp, "    <table align=\"center\" border=\"1\">\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <th>ÂÖ´Î</th>\n");
-  fprintf(fp, "        <th colspan=\"%d\">¶Ô¾Ö</th>\n", League.nGameNum);
-  fprintf(fp, "      </tr>\n");
-
-  // ÏÔÊ¾¶Ô¾Ö
-  for (i = 0; i < League.nRobinNum; i ++) {
-    for (j = 0; j < League.nRoundNum; j ++) {
-      fprintf(fp, "      <tr>\n");
-      fprintf(fp, "        <td align=\"center\">%d</td>\n", i * League.nRoundNum + j + 1);
-      for (k = 0; k < League.nGameNum; k ++) {
+    // æ˜¾ç¤ºæ’åï¼Œå¯å‚é˜…"PrintRankList()"
+    for (i = 0; i < League.nTeamNum; i++) {
+        nSortList[i] = i;
+    }
+    for (i = 0; i < League.nTeamNum - 1; i++) {
+        for (j = League.nTeamNum - 1; j > i; j--) {
+            if (TeamList[nSortList[j - 1]].nScore < TeamList[nSortList[j]].nScore) {
+                SWAP(nSortList[j - 1], nSortList[j]);
+            }
+        }
+    }
+    nLastRank = nLastScore = 0;
+    for (i = 0; i < League.nTeamNum; i++) {
+        lpTeam = TeamList + nSortList[i];
+        if (lpTeam->nScore != nLastScore) {
+            nLastRank = i;
+            nLastScore = lpTeam->nScore;
+        }
+        fprintf(fp, "      <tr>\n");
+        fprintf(fp, "        <td align=\"center\">%d</td>\n", nLastRank + 1);
+        fprintf(fp, "        <td align=\"center\">%.3s</td>\n", (const char*)&lpTeam->dwAbbr);
         fprintf(fp, "        <td align=\"center\">\n");
-        nResult = Live.cResult[i][j][k];
-        dwHome = TeamList[(int) RobinTable[j][k][0]].dwAbbr;
-        dwAway = TeamList[(int) RobinTable[j][k][1]].dwAbbr;
-        if (nResult == -1) {
-          fprintf(fp, "          %.3s-%.3s\n", (const char *) &dwHome, (const char *) &dwAway);
+        if (lpTeam->szUrl[0] == '\0') {
+            fprintf(fp, "          %s\n", lpTeam->szEngineName);
         } else {
-          fprintf(fp, "          <a href=\"%.3s-%.3s%c.%s\" target=\"_blank\">\n",
-              (const char *) &dwHome, (const char *) &dwAway, cszRobinChar[i], Live.szExt);
-          if (nResult == 0) {
-            fprintf(fp, "            <font color=\"#FF0000\">\n");
-            fprintf(fp, "              <strong>\n");
-          }
-          fprintf(fp, "                %.3s%s%.3s\n", (const char *) &dwHome,
-              cszResultDigit[nResult], (const char *) &dwAway);
-          if (nResult == 0) {
-            fprintf(fp, "              </strong>\n");
-            fprintf(fp, "            </font>\n");
-          }
-          fprintf(fp, "          </a>\n");
+            fprintf(fp, "          <a href=\"%s\" target=\"_blank\">%s</a>\n", lpTeam->szUrl, lpTeam->szEngineName);
         }
         fprintf(fp, "        </td>\n");
-      }
-      fprintf(fp, "      </tr>\n");
+        fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nEloValue);
+        fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nKValue);
+        fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nWin + lpTeam->nDraw + lpTeam->nLoss);
+        fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nWin);
+        fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nDraw);
+        fprintf(fp, "        <td align=\"center\">%d</td>\n", lpTeam->nLoss);
+        fprintf(fp, "        <td align=\"center\">%d%s</td>\n", lpTeam->nScore / 2, lpTeam->nScore % 2 == 0 ? "" : ".5");
+        fprintf(fp, "      </tr>\n");
     }
-  }
 
-  // ÏÔÊ¾Ò³½Å
-  fprintf(fp, "    </table>\n");
-  fprintf(fp, "    <table>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">¡¡¡¡</td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "    </table>\n");
-  if (Live.szFooter[0] != '\0') {
-    LocatePath(szEmbeddedFile, Live.szFooter);
-    PrintFile(fp, szEmbeddedFile);
-  }
-  fprintf(fp, "    <table align=\"center\">\n");
-  if (Live.szCounter[0] != '\0') {
+    // æ˜¾ç¤ºå†…å®¹.
+    fprintf(fp, "    </table>\n");
+    fprintf(fp, "    <p align=\"center\">\n");
+    fprintf(fp, "      <font size=\"4\" face=\"æ¥·ä½“_GB2312\">\n");
+    fprintf(fp, "        <strong>èµ›ç¨‹</strong>\n");
+    fprintf(fp, "      </font>\n");
+    fprintf(fp, "    </p>\n");
+    fprintf(fp, "    <table align=\"center\" border=\"1\">\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <th>è½®æ¬¡</th>\n");
+    fprintf(fp, "        <th colspan=\"%d\">å¯¹å±€</th>\n", League.nGameNum);
+    fprintf(fp, "      </tr>\n");
+
+    // æ˜¾ç¤ºå¯¹å±€.
+    for (i = 0; i < League.nRobinNum; i++) {
+        for (j = 0; j < League.nRoundNum; j++) {
+            fprintf(fp, "      <tr>\n");
+            fprintf(fp, "        <td align=\"center\">%d</td>\n", i * League.nRoundNum + j + 1);
+            for (k = 0; k < League.nGameNum; k++) {
+                fprintf(fp, "        <td align=\"center\">\n");
+                nResult = Live.cResult[i][j][k];
+                dwHome = TeamList[(int)RobinTable[j][k][0]].dwAbbr;
+                dwAway = TeamList[(int)RobinTable[j][k][1]].dwAbbr;
+                if (nResult == -1) {
+                    fprintf(fp, "          %.3s-%.3s\n", (const char*)&dwHome, (const char*)&dwAway);
+                } else {
+                    fprintf(fp, "          <a href=\"%.3s-%.3s%c.%s\" target=\"_blank\">\n",
+                        (const char*)&dwHome, (const char*)&dwAway, cszRobinChar[i], Live.szExt);
+                    if (nResult == 0) {
+                        fprintf(fp, "            <font color=\"#FF0000\">\n");
+                        fprintf(fp, "              <strong>\n");
+                    }
+                    fprintf(fp, "                %.3s%s%.3s\n", (const char*)&dwHome,
+                        cszResultDigit[nResult], (const char*)&dwAway);
+                    if (nResult == 0) {
+                        fprintf(fp, "              </strong>\n");
+                        fprintf(fp, "            </font>\n");
+                    }
+                    fprintf(fp, "          </a>\n");
+                }
+                fprintf(fp, "        </td>\n");
+            }
+            fprintf(fp, "      </tr>\n");
+        }
+    }
+
+    // æ˜¾ç¤ºé¡µè„š.
+    fprintf(fp, "    </table>\n");
+    fprintf(fp, "    <table>\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">ã€€ã€€</td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "    </table>\n");
+    if (Live.szFooter[0] != '\0') {
+        LocatePath(szEmbeddedFile, Live.szFooter);
+        PrintFile(fp, szEmbeddedFile);
+    }
+    fprintf(fp, "    <table align=\"center\">\n");
+    if (Live.szCounter[0] != '\0') {
+        fprintf(fp, "      <tr>\n");
+        fprintf(fp, "        <td align=\"center\">\n");
+        fprintf(fp, "          <font face=\"æ¥·ä½“_GB2312\">\n");
+        fprintf(fp, "            <strong>æ‚¨æ˜¯ç¬¬</strong>\n");
+        fprintf(fp, "          </font>\n");
+        fprintf(fp, "          <font face=\"Arial\">\n");
+        fprintf(fp, "            <strong>\n");
+        fprintf(fp, "              <script language=\"JavaScript\" src=\"%s\"></script>\n", Live.szCounter);
+        fprintf(fp, "            </strong>\n");
+        fprintf(fp, "          </font>\n");
+        fprintf(fp, "          <font face=\"æ¥·ä½“_GB2312\">\n");
+        fprintf(fp, "            <strong>ä½è§‚ä¼—</strong>\n");
+        fprintf(fp, "          </font>\n");
+        fprintf(fp, "        </td>\n");
+        fprintf(fp, "      </tr>\n");
+        fprintf(fp, "      <tr>\n");
+        fprintf(fp, "        <td align=\"center\">ã€€ã€€</td>\n");
+        fprintf(fp, "      </tr>\n");
+    }
     fprintf(fp, "      <tr>\n");
     fprintf(fp, "        <td align=\"center\">\n");
-    fprintf(fp, "          <font face=\"¿¬Ìå_GB2312\">\n");
-    fprintf(fp, "            <strong>ÄúÊÇµÚ</strong>\n");
-    fprintf(fp, "          </font>\n");
-    fprintf(fp, "          <font face=\"Arial\">\n");
-    fprintf(fp, "            <strong>\n");
-    fprintf(fp, "              <script language=\"JavaScript\" src=\"%s\"></script>\n", Live.szCounter);
-    fprintf(fp, "            </strong>\n");
-    fprintf(fp, "          </font>\n");
-    fprintf(fp, "          <font face=\"¿¬Ìå_GB2312\">\n");
-    fprintf(fp, "            <strong>Î»¹ÛÖÚ</strong>\n");
+    fprintf(fp, "          <font size=\"2\">\n");
+    fprintf(fp, "            æœ¬é¡µé¢ç”±â€œ<a href=\"http://www.xqbase.com/league/emulator.htm\" target=\"_blank\">"
+                "UCCIå¼•æ“è”èµ›åœ¨çº¿ç›´æ’­ç³»ç»Ÿ</a>â€ç”Ÿæˆ\n");
     fprintf(fp, "          </font>\n");
     fprintf(fp, "        </td>\n");
     fprintf(fp, "      </tr>\n");
     fprintf(fp, "      <tr>\n");
-    fprintf(fp, "        <td align=\"center\">¡¡¡¡</td>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
+    fprintf(fp, "            <img src=\"xqbase.gif\" border=\"0\">\n");
+    fprintf(fp, "          </a>\n");
+    fprintf(fp, "        </td>\n");
     fprintf(fp, "      </tr>\n");
-  }
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <font size=\"2\">\n");
-  fprintf(fp, "            ±¾Ò³ÃæÓÉ¡°<a href=\"http://www.xqbase.com/league/emulator.htm\" target=\"_blank\">"
-      "UCCIÒıÇæÁªÈüÔÚÏßÖ±²¥ÏµÍ³</a>¡±Éú³É\n");
-  fprintf(fp, "          </font>\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
-  fprintf(fp, "            <img src=\"xqbase.gif\" border=\"0\">\n");
-  fprintf(fp, "          </a>\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
-  fprintf(fp, "            <font size=\"2\" face=\"Arial\">\n");
-  fprintf(fp, "              <strong>www.xqbase.com</strong>\n");
-  fprintf(fp, "            </font>\n");
-  fprintf(fp, "          </a>\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "    </table>\n");
-  fprintf(fp, "  </body>\n");
-  fprintf(fp, "</html>\n");
-  fclose(fp);
-  HttpUpload(szUploadFile);
-}
-
-static const char *const cszResultChin[4] = {
-  "¶Ô", "ÏÈÊ¤", "ÏÈºÍ", "ÏÈ¸º"
-};
-
-inline void MOVE_ICCS(char *szIccs, int mv) {
-  szIccs[0] = (FILE_X(SRC(mv))) + 'A' - FILE_LEFT;
-  szIccs[1] = '9' + RANK_TOP - (RANK_Y(SRC(mv)));
-  szIccs[2] = '%';
-  szIccs[3] = '2';
-  szIccs[4] = 'D';
-  szIccs[5] = (FILE_X(DST(mv))) + 'A' - FILE_LEFT;
-  szIccs[6] = '9' + RANK_TOP - (RANK_Y(DST(mv)));
-  szIccs[7] = '\0';
-}
-
-static void PublishGame(PgnFileStruct *lppgn, const char *szGameFile, bool bForce = false) {
-  int i, nStatus, nCounter;
-  uint64_t dqChinMove;
-  char szEmbeddedFile[MAX_CHAR], szStartFen[MAX_CHAR];
-  char szUploadFile[16], szIccs[8];
-  char *lp;
-  FILE *fp;
-  PositionStruct pos;
-
-  if (SkipUpload(bForce)) {
-    return;
-  }
-  if (Live.nPort == 0) {
-    return;
-  }
-  strcpy(szUploadFile, szGameFile);
-  lp = strchr(szUploadFile, '.') + 1;
-  strncpy(lp, Live.szExt, 6);
-  lp[6] = '\0';
-  fp = fopen(szUploadFile, "wt");
-  if (fp == NULL) {
-    return;
-  }
-
-  // ÏÔÊ¾Ò³Ã¼
-  fprintf(fp, "<html>\n");
-  fprintf(fp, "  <head>\n");
-  fprintf(fp, "    <meta name=\"GENERATOR\" content=\"UCCIÒıÇæÁªÈüÔÚÏßÖ±²¥ÏµÍ³\">\n");
-  fprintf(fp, "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=gb_2312-80\">\n");
-  if (lppgn->nResult == 0 && Live.nRefresh != 0) {
-    fprintf(fp, "    <meta http-equiv=\"Refresh\" content=\"%d;url=%s\">\n", Live.nRefresh, szUploadFile);
-  }
-  fprintf(fp, "    <title>%s (%s) %s - %s ÔÚÏßÖ±²¥</title>\n",
-      lppgn->szRed, cszResultChin[lppgn->nResult], lppgn->szBlack, League.szEvent);
-  fprintf(fp, "  </head>\n");
-  fprintf(fp, "  <body background=\"background.gif\">\n");
-  fprintf(fp, "    <p align=\"center\">\n");
-  fprintf(fp, "      <font size=\"6\" face=\"Á¥Êé\">%s ÔÚÏßÖ±²¥</font>\n", League.szEvent);
-  fprintf(fp, "    </p>\n");
-  if (Live.szHeader[0] != '\0') {
-    LocatePath(szEmbeddedFile, Live.szHeader);
-    PrintFile(fp, szEmbeddedFile);
-  }
-  fprintf(fp, "    <p align=\"center\">\n");
-  fprintf(fp, "      <font size=\"4\" face=\"¿¬Ìå_GB2312\">\n");
-  fprintf(fp, "        <strong>%s (%s) %s</strong>\n", lppgn->szRed, cszResultChin[lppgn->nResult], lppgn->szBlack);
-  fprintf(fp, "      </font>\n");
-  fprintf(fp, "    </p>\n");
-  if (lppgn->nResult == 0) {
-    fprintf(fp, "    <p align=\"center\">\n");
-    fprintf(fp, "      <font size=\"2\">\n");
-    fprintf(fp, "        <a href=\"%s\">\n", szUploadFile);
-    fprintf(fp, "          <strong>¶Ô¾Ö½øĞĞÖĞ£¬Èç¹ûÄúµÄä¯ÀÀÆ÷Ã»ÓĞ×Ô¶¯Ìø×ª£¬Çëµã»÷ÕâÀï</strong>\n");
-    fprintf(fp, "        </a>\n");
-    fprintf(fp, "      </font>\n");
-    fprintf(fp, "    </p>\n");
-  }
-
-  // ÏÔÊ¾FlashÆåÅÌ
-  fprintf(fp, "    <table align=\"center\">\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <font size=\"2\">ºÚ·½ %s (%s)</font>\n", lppgn->szBlack, lppgn->szBlackElo);
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <embed src=\"http://www.xqbase.com/flashxq.swf\" width=\"216\" height=\"264\""
-      "allowScriptAccess=\"sameDomain\" quality=\"high\" wmode=\"transparent\" flashvars=\"MoveList=");
-  for (i = 1; i <= lppgn->nMaxMove; i ++) {
-    MOVE_ICCS(szIccs, lppgn->wmvMoveTable[i]);
-    fprintf(fp, "%s+", szIccs);
-  }
-  if (lppgn->nResult == 0) {
-    fprintf(fp, "&Step=%d", lppgn->nMaxMove);
-  }
-  lppgn->posStart.ToFen(szStartFen);
-  if (strcmp(szStartFen, cszStartFen) != 0) {
-    fprintf(fp, "&Position=%s", szStartFen);
-  }
-  fprintf(fp, "\" type=\"application/x-shockwave-flash\" pluginspage=\"http://www.macromedia.com/go/getflashplayer\" />\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <font size=\"2\">ºì·½ %s (%s)</font>\n", lppgn->szRed, lppgn->szRedElo);
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "    </table>\n");
-
-  // ÏÔÊ¾¿ª¾ÖĞÅÏ¢
-  if (lppgn->szEcco[0] == '\0') {
-    fprintf(fp, "    <table align=\"center\">\n");
     fprintf(fp, "      <tr>\n");
-    fprintf(fp, "        <td align=\"center\">¡¡¡¡</td>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
+    fprintf(fp, "            <font size=\"2\" face=\"Arial\">\n");
+    fprintf(fp, "              <strong>www.xqbase.com</strong>\n");
+    fprintf(fp, "            </font>\n");
+    fprintf(fp, "          </a>\n");
+    fprintf(fp, "        </td>\n");
     fprintf(fp, "      </tr>\n");
     fprintf(fp, "    </table>\n");
-  } else {
-    fprintf(fp, "    <p align=\"center\">\n");
-    fprintf(fp, "      <font size=\"4\">\n");
-    if (lppgn->szVar[0] == '\0') {
-      fprintf(fp, "        <strong>%s(%s)</strong>\n", lppgn->szOpen, lppgn->szEcco);
-    } else {
-      fprintf(fp, "        <strong>%s¡ª¡ª%s(%s)</strong>\n", lppgn->szOpen, lppgn->szVar, lppgn->szEcco);
+    fprintf(fp, "  </body>\n");
+    fprintf(fp, "</html>\n");
+    fclose(fp);
+    HttpUpload(szUploadFile);
+}
+
+static const char* const cszResultChin[4] = {
+    "å¯¹", "å…ˆèƒœ", "å…ˆå’Œ", "å…ˆè´Ÿ"
+};
+
+inline void MOVE_ICCS(char* szIccs, int mv)
+{
+    szIccs[0] = (FILE_X(SRC(mv))) + 'A' - FILE_LEFT;
+    szIccs[1] = '9' + RANK_TOP - (RANK_Y(SRC(mv)));
+    szIccs[2] = '%';
+    szIccs[3] = '2';
+    szIccs[4] = 'D';
+    szIccs[5] = (FILE_X(DST(mv))) + 'A' - FILE_LEFT;
+    szIccs[6] = '9' + RANK_TOP - (RANK_Y(DST(mv)));
+    szIccs[7] = '\0';
+}
+
+static void PublishGame(PgnFileStruct* lppgn, const char* szGameFile, bool bForce = false)
+{
+    int i, nStatus, nCounter;
+    uint64_t dqChinMove;
+    char szEmbeddedFile[MAX_CHAR], szStartFen[MAX_CHAR];
+    char szUploadFile[16], szIccs[8];
+    char* lp;
+    FILE* fp;
+    PositionStruct pos;
+
+    if (SkipUpload(bForce)) {
+        return;
     }
+    if (Live.nPort == 0) {
+        return;
+    }
+    strcpy(szUploadFile, szGameFile);
+    lp = strchr(szUploadFile, '.') + 1;
+    strncpy(lp, Live.szExt, 6);
+    lp[6] = '\0';
+    fp = fopen(szUploadFile, "wt");
+    if (fp == NULL) {
+        return;
+    }
+
+    // æ˜¾ç¤ºé¡µçœ‰.
+    fprintf(fp, "<html>\n");
+    fprintf(fp, "  <head>\n");
+    fprintf(fp, "    <meta name=\"GENERATOR\" content=\"UCCIå¼•æ“è”èµ›åœ¨çº¿ç›´æ’­ç³»ç»Ÿ\">\n");
+    fprintf(fp, "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=gb_2312-80\">\n");
+    if (lppgn->nResult == 0 && Live.nRefresh != 0) {
+        fprintf(fp, "    <meta http-equiv=\"Refresh\" content=\"%d;url=%s\">\n", Live.nRefresh, szUploadFile);
+    }
+    fprintf(fp, "    <title>%s (%s) %s - %s åœ¨çº¿ç›´æ’­</title>\n",
+        lppgn->szRed, cszResultChin[lppgn->nResult], lppgn->szBlack, League.szEvent);
+    fprintf(fp, "  </head>\n");
+    fprintf(fp, "  <body background=\"background.gif\">\n");
+    fprintf(fp, "    <p align=\"center\">\n");
+    fprintf(fp, "      <font size=\"6\" face=\"éš¶ä¹¦\">%s åœ¨çº¿ç›´æ’­</font>\n", League.szEvent);
+    fprintf(fp, "    </p>\n");
+    if (Live.szHeader[0] != '\0') {
+        LocatePath(szEmbeddedFile, Live.szHeader);
+        PrintFile(fp, szEmbeddedFile);
+    }
+    fprintf(fp, "    <p align=\"center\">\n");
+    fprintf(fp, "      <font size=\"4\" face=\"æ¥·ä½“_GB2312\">\n");
+    fprintf(fp, "        <strong>%s (%s) %s</strong>\n", lppgn->szRed, cszResultChin[lppgn->nResult], lppgn->szBlack);
     fprintf(fp, "      </font>\n");
     fprintf(fp, "    </p>\n");
-  }
-  fprintf(fp, "    <table align=\"center\">\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td>\n");
-  fprintf(fp, "          <dl>\n");
-
-  // ÏÔÊ¾×Å·¨
-  pos = lppgn->posStart;
-  nCounter = 1;
-  for (i = 1; i <= lppgn->nMaxMove; i ++) {
-    dqChinMove = File2Chin(Move2File(lppgn->wmvMoveTable[i], pos), pos.sdPlayer);
-    if (pos.sdPlayer == 0) {
-      fprintf(fp, "            <dt>%d. %.8s", nCounter, (const char *) &dqChinMove);
-    } else {
-      fprintf(fp, " %.8s</dt>\n", (const char *) &dqChinMove);
-      nCounter ++;
+    if (lppgn->nResult == 0) {
+        fprintf(fp, "    <p align=\"center\">\n");
+        fprintf(fp, "      <font size=\"2\">\n");
+        fprintf(fp, "        <a href=\"%s\">\n", szUploadFile);
+        fprintf(fp, "          <strong>å¯¹å±€è¿›è¡Œä¸­ï¼Œå¦‚æœæ‚¨çš„æµè§ˆå™¨æ²¡æœ‰è‡ªåŠ¨è·³è½¬ï¼Œè¯·ç‚¹å‡»è¿™é‡Œ</strong>\n");
+        fprintf(fp, "        </a>\n");
+        fprintf(fp, "      </font>\n");
+        fprintf(fp, "    </p>\n");
     }
-    TryMove(pos, nStatus, lppgn->wmvMoveTable[i]);
-    if (pos.nMoveNum == MAX_MOVE_NUM) {
-      pos.SetIrrev();
+
+    // æ˜¾ç¤ºFlashæ£‹ç›˜.
+    fprintf(fp, "    <table align=\"center\">\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <font size=\"2\">é»‘æ–¹ %s (%s)</font>\n", lppgn->szBlack, lppgn->szBlackElo);
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <embed src=\"http://www.xqbase.com/flashxq.swf\" width=\"216\" height=\"264\""
+                "allowScriptAccess=\"sameDomain\" quality=\"high\" wmode=\"transparent\" flashvars=\"MoveList=");
+    for (i = 1; i <= lppgn->nMaxMove; i++) {
+        MOVE_ICCS(szIccs, lppgn->wmvMoveTable[i]);
+        fprintf(fp, "%s+", szIccs);
     }
-  }
-  if (pos.sdPlayer == 1) {
-    fprintf(fp, "</dt>\n");
-  }
-  if (lppgn->szCommentTable[lppgn->nMaxMove] != NULL) {
-    fprintf(fp, "            <dt>¡¡¡¡%s</dt>\n", lppgn->szCommentTable[lppgn->nMaxMove]);
-  }
-
-  // ÏÔÊ¾Ò³½Å
-  fprintf(fp, "          </dl>\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <a href=\"%s\"><img src=\"pgn.gif\" border=\"0\">ÏÂÔØÆå¾Ö</a>", szGameFile);
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "    </table>\n");
-  fprintf(fp, "    <dl>\n");
-  fprintf(fp, "      <dt>¡¡¡¡Èç¹ûÄúÒÑ¾­°²×°¡¶ÏóÆåÎ×Ê¦¡·Èí¼ş£¬ÄÇÃ´µã»÷ÉÏÃæÁ´½Ó£¬¡¶ÏóÆåÎ×Ê¦¡·¾Í»á×Ô¶¯´ò¿ªÆå¾Ö¡£</dt>\n");
-  fprintf(fp, "      <dt>¡¡¡¡¡¶ÏóÆåÎ×Ê¦¡·ÊÇÃâ·ÑÈí¼ş£¬Äú¿ÉÒÔ·ÃÎÊÒÔÏÂÒ³Ãæ£¬»ñµÃËÙ¶È×î¿ìµÄÏÂÔØÁ´½Ó£º</dt>\n");
-  fprintf(fp, "      <dt>¡¡¡¡¡¡¡¡<a href=\"http://www.skycn.com/soft/24665.html\" target=\"_blank\">"
-      "http://www.skycn.com/soft/24665.html</a>(Ìì¿ÕÈí¼şÕ¾)</dt>\n");
-  fprintf(fp, "      <dt>¡¡¡¡¡¡¡¡<a href=\"http://www.onlinedown.net/soft/38287.htm\" target=\"_blank\">"
-      "http://www.onlinedown.net/soft/38287.htm</a>(»ª¾üÈí¼şÔ°)</dt>\n");
-  fprintf(fp, "    </dl>\n");
-  fprintf(fp, "    <ul>\n");
-  fprintf(fp, "      <li>·µ»Ø¡¡<a href=\"index.%s\">%s ÔÚÏßÖ±²¥</a></li>\n", Live.szExt, League.szEvent);
-  fprintf(fp, "    </ul>\n");
-  if (Live.szFooter[0] != '\0') {
-    LocatePath(szEmbeddedFile, Live.szFooter);
-    PrintFile(fp, szEmbeddedFile);
-  }
-  fprintf(fp, "    <table align=\"center\">\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <font size=\"2\">\n");
-  fprintf(fp, "            ±¾Ò³ÃæÓÉ¡°<a href=\"http://www.xqbase.com/league/emulator.htm\" target=\"_blank\">"
-      "UCCIÒıÇæÁªÈüÔÚÏßÖ±²¥ÏµÍ³</a>¡±Éú³É\n");
-  fprintf(fp, "          </font>\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
-  fprintf(fp, "            <img src=\"xqbase.gif\" border=\"0\">\n");
-  fprintf(fp, "          </a>\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "      <tr>\n");
-  fprintf(fp, "        <td align=\"center\">\n");
-  fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
-  fprintf(fp, "            <font size=\"2\" face=\"Arial\">\n");
-  fprintf(fp, "              <strong>www.xqbase.com</strong>\n");
-  fprintf(fp, "            </font>\n");
-  fprintf(fp, "          </a>\n");
-  fprintf(fp, "        </td>\n");
-  fprintf(fp, "      </tr>\n");
-  fprintf(fp, "    </table>\n");
-  fprintf(fp, "  </body>\n");
-  fprintf(fp, "</html>\n");
-  fclose(fp);
-  HttpUpload(szUploadFile);
-  // ÓÉÓÚ½ô½Ó×Å¾ÍÉÏ´«£¬²»ÄÜ±£Ö¤Æå¾ÖÎÄ¼şÒ»¶¨ÉÏ´«³É¹¦
-  HttpUpload(szGameFile);
-}
-
-// ±ÈÈü½á¹¹£¬0´ú±íÖ÷¶Ó(ÏÈĞĞ·½)£¬1´ú±í¿Í¶Ó(ºóĞĞ·½)
-struct GameStruct {
-  int sd, nCounter, nResult, nTimer[2];
-  bool bTimeout, bStarted[2], bUseMilliSec[2], bDraw;
-  int64_t llTime;
-  TeamStruct *lpTeam[2];
-  PipeStruct pipe[2];
-  PositionStruct posIrrev;
-  char szIrrevFen[MAX_CHAR];
-  char szGameFile[16];
-  PgnFileStruct *lppgn;
-  uint32_t dwFileMove[20];
-  FILE *fpLogFile;
-  CheckFileStruct CheckFile;
-
-  void Send(const char *szLineStr) {
-    pipe[sd].LineOutput(szLineStr);
-    fprintf(fpLogFile, "Emu->%.3s(%08d):%s\n", (const char *) &lpTeam[sd]->dwAbbr,
-        nTimer[sd] - (int) (GetTime() - llTime), szLineStr);
-    fflush(fpLogFile);
-  }
-  bool Receive(char *szLineStr) {
-    if (pipe[sd].LineInput(szLineStr)) {
-      fprintf(fpLogFile, "%.3s->Emu(%08d):%s\n", (const char *) &lpTeam[sd]->dwAbbr,
-          nTimer[sd] - (int) (GetTime() - llTime), szLineStr);
-      fflush(fpLogFile);
-      return true;
-    } else {
-      return false;
+    if (lppgn->nResult == 0) {
+        fprintf(fp, "&Step=%d", lppgn->nMaxMove);
     }
-  }
-  void AddMove(int mv);  // ×ßÒ»¸ö×Å·¨
-  void RunEngine(void);  // ÈÃÒıÇæÔËĞĞ
-  void BeginGame(int nRobin, int nRound, int nGame); // ¿ªÊ¼Ò»¸öÆå¾Ö
-  void QuitEngine(void); // ÈÃÒıÇæÍË³ö
-  void ResumeGame(void); // ¼ÌĞøÉÏ´Î¹ÒÆğµÄÆå¾Ö
-  bool EndGame(int nRobin, int nRound, int nGame);   // ÖÕÖ¹Ò»¸öÆå¾Ö
-  void TerminateGame(void); // ÖĞ¶ÏÒ»¸öÆå¾Ö
-};
-
-static const char *const cszColorStr[2] = {
-  "ºì·½", "ºÚ·½"
-};
-
-const int BESTMOVE_THINKING = 0; // ÒıÇæÕıÔÚË¼¿¼£¬Ã»ÓĞ·´À¡Öµ
-const int BESTMOVE_DRAW = -1;    // ÒıÇæ½ÓÊÜÌáºÍµÄ·´À¡Öµ
-const int BESTMOVE_RESIGN = -2;  // ÒıÇæÈÏÊäµÄ·´À¡Öµ
-const int BESTMOVE_TIMEOUT = -3; // ÒıÇæ³¬Ê±µÄ·´À¡Öµ
-
-// ×ßÒ»¸ö×Å·¨
-void GameStruct::AddMove(int mv) {
-  int nStatus;
-  uint32_t dwEccoIndex;
-  char *szComment;
-  char szStartFen[MAX_CHAR];
-
-  if (mv < BESTMOVE_THINKING) {
-    szComment = new char[MAX_CHAR];
-    lppgn->szCommentTable[lppgn->nMaxMove] = szComment;
-    if (mv == BESTMOVE_DRAW) {
-      strcpy(szComment, "Ë«·½ÒéºÍ");
-      nResult = 2;
-    } else {
-      sprintf(szComment, mv == BESTMOVE_RESIGN ? "%sÈÏÊä" : "%s³¬Ê±×÷¸º", cszColorStr[sd]);
-      nResult = 3 - sd * 2;
-    }
-  } else {
-    // Ê×ÏÈ°Ñ¸Ã×Å·¨¼ÇÂ¼µ½ÆåÆ×ÉÏ
-    lppgn->nMaxMove ++;
-    lppgn->wmvMoveTable[lppgn->nMaxMove] = mv;
-    // ½âÎöECCO
     lppgn->posStart.ToFen(szStartFen);
-    if (strcmp(szStartFen, cszStartFen) == 0 && League.EccoApi.Available()) {
-      if (lppgn->nMaxMove <= 20) {
-        dwFileMove[lppgn->nMaxMove - 1] = Move2File(mv, posIrrev);
-      }
-      dwEccoIndex = League.EccoApi.EccoIndex((const char *) dwFileMove);
-      strcpy(lppgn->szEcco, (const char *) &dwEccoIndex);
-      strcpy(lppgn->szOpen, League.EccoApi.EccoOpening(dwEccoIndex));
-      strcpy(lppgn->szVar, League.EccoApi.EccoVariation(dwEccoIndex));
+    if (strcmp(szStartFen, cszStartFen) != 0) {
+        fprintf(fp, "&Position=%s", szStartFen);
     }
-    // È»ºó×ßÕâ¸ö×Å·¨£¬²¢ÅĞ¶Ï×´Ì¬
-    TryMove(posIrrev, nStatus, mv);
-    if ((nStatus & MOVE_CAPTURE) != 0) {
-      posIrrev.ToFen(szIrrevFen);
-      posIrrev.SetIrrev();
-    }
-    nTimer[sd] += League.nIncrTime * League.nStandardCpuTime;
-    if (nStatus < MOVE_MATE) {
-      // Èç¹ûÊÇÕı³£×Å·¨£¬ÄÇÃ´½á¹ûÉèÎª¡°½øĞĞÖĞ¡±
-      nResult = 0;
+    fprintf(fp, "\" type=\"application/x-shockwave-flash\" pluginspage=\"http://www.macromedia.com/go/getflashplayer\" />\n");
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <font size=\"2\">çº¢æ–¹ %s (%s)</font>\n", lppgn->szRed, lppgn->szRedElo);
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "    </table>\n");
+
+    // æ˜¾ç¤ºå¼€å±€ä¿¡æ¯.
+    if (lppgn->szEcco[0] == '\0') {
+        fprintf(fp, "    <table align=\"center\">\n");
+        fprintf(fp, "      <tr>\n");
+        fprintf(fp, "        <td align=\"center\">ã€€ã€€</td>\n");
+        fprintf(fp, "      </tr>\n");
+        fprintf(fp, "    </table>\n");
     } else {
-      // Èç¹ûÊÇÖÕÖ¹×Å·¨£¬ÄÇÃ´¸ù¾İ×´Ì¬ÅĞ¶¨½á¹û
-      szComment = new char[MAX_CHAR];
-      lppgn->szCommentTable[lppgn->nMaxMove] = szComment;
-      if (false) {
-      } else if ((nStatus & MOVE_ILLEGAL) != 0 || (nStatus & MOVE_INCHECK) != 0) {
-        sprintf(szComment, "%s×ß·¨Î¥Àı", cszColorStr[sd]);
-        nResult = 3 - sd * 2;
-      } else if ((nStatus & MOVE_DRAW) != 0) {
-        strcpy(szComment, "³¬¹ı×ÔÈ»ÏŞ×Å×÷ºÍ");
-        nResult = 2;
-      } else if ((nStatus & MOVE_PERPETUAL) != 0) {
-        if ((nStatus & MOVE_PERPETUAL_WIN) != 0) {
-          if ((nStatus & MOVE_PERPETUAL_LOSS) != 0) {
-            strcpy(szComment, "Ë«·½²»±ä×÷ºÍ");
-            nResult = 2;
-          } else {
-            sprintf(szComment, "%s³¤´ò×÷¸º", cszColorStr[1 - sd]);
-            nResult = 1 + sd * 2;
-          }
+        fprintf(fp, "    <p align=\"center\">\n");
+        fprintf(fp, "      <font size=\"4\">\n");
+        if (lppgn->szVar[0] == '\0') {
+            fprintf(fp, "        <strong>%s(%s)</strong>\n", lppgn->szOpen, lppgn->szEcco);
         } else {
-          if ((nStatus & MOVE_PERPETUAL_LOSS) != 0) {
-            sprintf(szComment, "%s³¤´ò×÷¸º", cszColorStr[sd]);
-            nResult = 3 - sd * 2;
-          } else {
-            strcpy(szComment, "Ë«·½²»±ä×÷ºÍ");
-            nResult = 2;
-          }
+            fprintf(fp, "        <strong>%sâ€”â€”%s(%s)</strong>\n", lppgn->szOpen, lppgn->szVar, lppgn->szEcco);
         }
-      } else { // MOVE_MATE
-        sprintf(szComment, "%sÊ¤", cszColorStr[sd]);
-        nResult = 1 + sd * 2;
-      }
+        fprintf(fp, "      </font>\n");
+        fprintf(fp, "    </p>\n");
     }
-  }
-  lppgn->nResult = nResult;
-  // ½»»»×ß×Ó·½£¬ÆäÊµ"sd"ºÍ"posIrrev.sdPlayer"ÊÇÍ¬²½µÄ
-  sd = 1 - sd;
+    fprintf(fp, "    <table align=\"center\">\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td>\n");
+    fprintf(fp, "          <dl>\n");
+
+    // æ˜¾ç¤ºç€æ³•.
+    pos = lppgn->posStart;
+    nCounter = 1;
+    for (i = 1; i <= lppgn->nMaxMove; i++) {
+        dqChinMove = File2Chin(Move2File(lppgn->wmvMoveTable[i], pos), pos.sdPlayer);
+        if (pos.sdPlayer == 0) {
+            fprintf(fp, "            <dt>%d. %.8s", nCounter, (const char*)&dqChinMove);
+        } else {
+            fprintf(fp, " %.8s</dt>\n", (const char*)&dqChinMove);
+            nCounter++;
+        }
+        TryMove(pos, nStatus, lppgn->wmvMoveTable[i]);
+        if (pos.nMoveNum == MAX_MOVE_NUM) {
+            pos.SetIrrev();
+        }
+    }
+    if (pos.sdPlayer == 1) {
+        fprintf(fp, "</dt>\n");
+    }
+    if (lppgn->szCommentTable[lppgn->nMaxMove] != NULL) {
+        fprintf(fp, "            <dt>ã€€ã€€%s</dt>\n", lppgn->szCommentTable[lppgn->nMaxMove]);
+    }
+
+    // æ˜¾ç¤ºé¡µè„š.
+    fprintf(fp, "          </dl>\n");
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <a href=\"%s\"><img src=\"pgn.gif\" border=\"0\">ä¸‹è½½æ£‹å±€</a>", szGameFile);
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "    </table>\n");
+    fprintf(fp, "    <dl>\n");
+    fprintf(fp, "      <dt>ã€€ã€€å¦‚æœæ‚¨å·²ç»å®‰è£…ã€Šè±¡æ£‹å·«å¸ˆã€‹è½¯ä»¶ï¼Œé‚£ä¹ˆç‚¹å‡»ä¸Šé¢é“¾æ¥ï¼Œã€Šè±¡æ£‹å·«å¸ˆã€‹å°±ä¼šè‡ªåŠ¨æ‰“å¼€æ£‹å±€ã€‚</dt>\n");
+    fprintf(fp, "      <dt>ã€€ã€€ã€Šè±¡æ£‹å·«å¸ˆã€‹æ˜¯å…è´¹è½¯ä»¶ï¼Œæ‚¨å¯ä»¥è®¿é—®ä»¥ä¸‹é¡µé¢ï¼Œè·å¾—é€Ÿåº¦æœ€å¿«çš„ä¸‹è½½é“¾æ¥ï¼š</dt>\n");
+    fprintf(fp, "      <dt>ã€€ã€€ã€€ã€€<a href=\"http://www.skycn.com/soft/24665.html\" target=\"_blank\">"
+                "http://www.skycn.com/soft/24665.html</a>(å¤©ç©ºè½¯ä»¶ç«™)</dt>\n");
+    fprintf(fp, "      <dt>ã€€ã€€ã€€ã€€<a href=\"http://www.onlinedown.net/soft/38287.htm\" target=\"_blank\">"
+                "http://www.onlinedown.net/soft/38287.htm</a>(åå†›è½¯ä»¶å›­)</dt>\n");
+    fprintf(fp, "    </dl>\n");
+    fprintf(fp, "    <ul>\n");
+    fprintf(fp, "      <li>è¿”å›ã€€<a href=\"index.%s\">%s åœ¨çº¿ç›´æ’­</a></li>\n", Live.szExt, League.szEvent);
+    fprintf(fp, "    </ul>\n");
+    if (Live.szFooter[0] != '\0') {
+        LocatePath(szEmbeddedFile, Live.szFooter);
+        PrintFile(fp, szEmbeddedFile);
+    }
+    fprintf(fp, "    <table align=\"center\">\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <font size=\"2\">\n");
+    fprintf(fp, "            æœ¬é¡µé¢ç”±â€œ<a href=\"http://www.xqbase.com/league/emulator.htm\" target=\"_blank\">"
+                "UCCIå¼•æ“è”èµ›åœ¨çº¿ç›´æ’­ç³»ç»Ÿ</a>â€ç”Ÿæˆ\n");
+    fprintf(fp, "          </font>\n");
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
+    fprintf(fp, "            <img src=\"xqbase.gif\" border=\"0\">\n");
+    fprintf(fp, "          </a>\n");
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "      <tr>\n");
+    fprintf(fp, "        <td align=\"center\">\n");
+    fprintf(fp, "          <a href=\"http://www.xqbase.com/\" target=\"_blank\">\n");
+    fprintf(fp, "            <font size=\"2\" face=\"Arial\">\n");
+    fprintf(fp, "              <strong>www.xqbase.com</strong>\n");
+    fprintf(fp, "            </font>\n");
+    fprintf(fp, "          </a>\n");
+    fprintf(fp, "        </td>\n");
+    fprintf(fp, "      </tr>\n");
+    fprintf(fp, "    </table>\n");
+    fprintf(fp, "  </body>\n");
+    fprintf(fp, "</html>\n");
+    fclose(fp);
+    HttpUpload(szUploadFile);
+    // ç”±äºç´§æ¥ç€å°±ä¸Šä¼ ï¼Œä¸èƒ½ä¿è¯æ£‹å±€æ–‡ä»¶ä¸€å®šä¸Šä¼ æˆåŠŸ.
+    HttpUpload(szGameFile);
 }
 
-const char *const cszGo = "go time %d increment %d opptime %d oppincrement %d";
-const char *const cszGoDraw = "go draw time %d increment %d opptime %d oppincrement %d";
+// æ¯”èµ›ç»“æ„ï¼Œ0ä»£è¡¨ä¸»é˜Ÿ(å…ˆè¡Œæ–¹)ï¼Œ1ä»£è¡¨å®¢é˜Ÿ(åè¡Œæ–¹)
+struct GameStruct {
+    int sd, nCounter, nResult, nTimer[2];
+    bool bTimeout, bStarted[2], bUseMilliSec[2], bDraw;
+    int64_t llTime;
+    TeamStruct* lpTeam[2];
+    PipeStruct pipe[2];
+    PositionStruct posIrrev;
+    char szIrrevFen[MAX_CHAR];
+    char szGameFile[16];
+    PgnFileStruct* lppgn;
+    uint32_t dwFileMove[20];
+    FILE* fpLogFile;
+    CheckFileStruct CheckFile;
 
-// ÈÃÒıÇæÔËĞĞ
-void GameStruct::RunEngine(void) {
-  char szLineStr[MAX_CHAR], szFileName[MAX_CHAR];
-  char *lpLineChar;
-  int i, nMoveNum, nBanMoves;
-  int mvBanList[MAX_GEN_MOVES];
-  MoveStruct mvs[MAX_GEN_MOVES];
-  uint32_t dwMoveStr;
-  FILE *fpOptionFile;
-
-  if (!bStarted[sd]) {
-    // Èç¹ûÒıÇæÉĞÎ´Æô¶¯£¬ÄÇÃ´Æô¶¯ÒıÇæ
-    llTime = GetTime();
-    LocatePath(szFileName, lpTeam[sd]->szEngineFile);
-    pipe[sd].Open(szFileName);
-    Send("ucci");
-    // ·¢ËÍ"ucci"Ö¸Áîºó£¬ÔÚ10ÃëÖÓÄÚµÈ´ı"ucciok"·´À¡ĞÅÏ¢
-    while ((int) (GetTime() - llTime) < 10000) {
-      if (Receive(szLineStr)) {
-        if (StrEqv(szLineStr, "option usemillisec ")) {
-          bUseMilliSec[sd] = true;
-        }
-        if (StrEqv(szLineStr, "ucciok")) {
-          break;
-        }
-      } else {
-        Idle();
-      }
+    void Send(const char* szLineStr)
+    {
+        pipe[sd].LineOutput(szLineStr);
+        fprintf(fpLogFile, "Emu->%.3s(%08d):%s\n", (const char*)&lpTeam[sd]->dwAbbr,
+            nTimer[sd] - (int)(GetTime() - llTime), szLineStr);
+        fflush(fpLogFile);
     }
-    // ÉèÖÃ±ØÒªµÄ³õÊ¼»¯Ñ¡Ïî
-    if (League.bPromotion) {
-      Send("setoption promotion true");
+    bool Receive(char* szLineStr)
+    {
+        if (pipe[sd].LineInput(szLineStr)) {
+            fprintf(fpLogFile, "%.3s->Emu(%08d):%s\n", (const char*)&lpTeam[sd]->dwAbbr,
+                nTimer[sd] - (int)(GetTime() - llTime), szLineStr);
+            fflush(fpLogFile);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    void AddMove(int mv); // èµ°ä¸€ä¸ªç€æ³•.
+    void RunEngine(void); // è®©å¼•æ“è¿è¡Œ.
+    void BeginGame(int nRobin, int nRound, int nGame); // å¼€å§‹ä¸€ä¸ªæ£‹å±€.
+    void QuitEngine(void); // è®©å¼•æ“é€€å‡º.
+    void ResumeGame(void); // ç»§ç»­ä¸Šæ¬¡æŒ‚èµ·çš„æ£‹å±€.
+    bool EndGame(int nRobin, int nRound, int nGame); // ç»ˆæ­¢ä¸€ä¸ªæ£‹å±€.
+    void TerminateGame(void); // ä¸­æ–­ä¸€ä¸ªæ£‹å±€.
+};
+
+static const char* const cszColorStr[2] = {
+    "çº¢æ–¹", "é»‘æ–¹"
+};
+
+const int BESTMOVE_THINKING = 0; // å¼•æ“æ­£åœ¨æ€è€ƒï¼Œæ²¡æœ‰åé¦ˆå€¼.
+const int BESTMOVE_DRAW = -1; // å¼•æ“æ¥å—æå’Œçš„åé¦ˆå€¼.
+const int BESTMOVE_RESIGN = -2; // å¼•æ“è®¤è¾“çš„åé¦ˆå€¼.
+const int BESTMOVE_TIMEOUT = -3; // å¼•æ“è¶…æ—¶çš„åé¦ˆå€¼.
+
+// èµ°ä¸€ä¸ªç€æ³•.
+void GameStruct::AddMove(int mv)
+{
+    int nStatus;
+    uint32_t dwEccoIndex;
+    char* szComment;
+    char szStartFen[MAX_CHAR];
+
+    if (mv < BESTMOVE_THINKING) {
+        szComment = new char[MAX_CHAR];
+        lppgn->szCommentTable[lppgn->nMaxMove] = szComment;
+        if (mv == BESTMOVE_DRAW) {
+            strcpy(szComment, "åŒæ–¹è®®å’Œ");
+            nResult = 2;
+        } else {
+            sprintf(szComment, mv == BESTMOVE_RESIGN ? "%sè®¤è¾“" : "%sè¶…æ—¶ä½œè´Ÿ", cszColorStr[sd]);
+            nResult = 3 - sd * 2;
+        }
     } else {
-      Send("setoption promotion false");
-    }
-    Send("setoption ponder false");
-    Send("setoption newgame");
-    if (bUseMilliSec[sd]) {
-      Send("setoption usemillisec true");
-    }
-    // °ÑÒıÇæÑ¡ÏîÎÄ¼şµÄÄÚÈİ·¢ËÍ¸øÒıÇæ
-    LocatePath(szFileName, lpTeam[sd]->szOptionFile);
-    fpOptionFile = fopen(szFileName, "rt");
-    if (fpOptionFile != NULL) {
-      while (fgets(szLineStr, MAX_CHAR, fpOptionFile) != NULL) {
-        lpLineChar = strchr(szLineStr, '\n');
-        if (lpLineChar != NULL) {
-          *lpLineChar = '\0';
+        // é¦–å…ˆæŠŠè¯¥ç€æ³•è®°å½•åˆ°æ£‹è°±ä¸Š.
+        lppgn->nMaxMove++;
+        lppgn->wmvMoveTable[lppgn->nMaxMove] = mv;
+        // è§£æECCO
+        lppgn->posStart.ToFen(szStartFen);
+        if (strcmp(szStartFen, cszStartFen) == 0 && League.EccoApi.Available()) {
+            if (lppgn->nMaxMove <= 20) {
+                dwFileMove[lppgn->nMaxMove - 1] = Move2File(mv, posIrrev);
+            }
+            dwEccoIndex = League.EccoApi.EccoIndex((const char*)dwFileMove);
+            strcpy(lppgn->szEcco, (const char*)&dwEccoIndex);
+            strcpy(lppgn->szOpen, League.EccoApi.EccoOpening(dwEccoIndex));
+            strcpy(lppgn->szVar, League.EccoApi.EccoVariation(dwEccoIndex));
         }
-        Send(szLineStr);
-      }
-      fclose(fpOptionFile);
+        // ç„¶åèµ°è¿™ä¸ªç€æ³•ï¼Œå¹¶åˆ¤æ–­çŠ¶æ€.
+        TryMove(posIrrev, nStatus, mv);
+        if ((nStatus & MOVE_CAPTURE) != 0) {
+            posIrrev.ToFen(szIrrevFen);
+            posIrrev.SetIrrev();
+        }
+        nTimer[sd] += League.nIncrTime * League.nStandardCpuTime;
+        if (nStatus < MOVE_MATE) {
+            // å¦‚æœæ˜¯æ­£å¸¸ç€æ³•ï¼Œé‚£ä¹ˆç»“æœè®¾ä¸ºâ€œè¿›è¡Œä¸­â€.
+            nResult = 0;
+        } else {
+            // å¦‚æœæ˜¯ç»ˆæ­¢ç€æ³•ï¼Œé‚£ä¹ˆæ ¹æ®çŠ¶æ€åˆ¤å®šç»“æœ.
+            szComment = new char[MAX_CHAR];
+            lppgn->szCommentTable[lppgn->nMaxMove] = szComment;
+            if (false) {
+            } else if ((nStatus & MOVE_ILLEGAL) != 0 || (nStatus & MOVE_INCHECK) != 0) {
+                sprintf(szComment, "%sèµ°æ³•è¿ä¾‹", cszColorStr[sd]);
+                nResult = 3 - sd * 2;
+            } else if ((nStatus & MOVE_DRAW) != 0) {
+                strcpy(szComment, "è¶…è¿‡è‡ªç„¶é™ç€ä½œå’Œ");
+                nResult = 2;
+            } else if ((nStatus & MOVE_PERPETUAL) != 0) {
+                if ((nStatus & MOVE_PERPETUAL_WIN) != 0) {
+                    if ((nStatus & MOVE_PERPETUAL_LOSS) != 0) {
+                        strcpy(szComment, "åŒæ–¹ä¸å˜ä½œå’Œ");
+                        nResult = 2;
+                    } else {
+                        sprintf(szComment, "%sé•¿æ‰“ä½œè´Ÿ", cszColorStr[1 - sd]);
+                        nResult = 1 + sd * 2;
+                    }
+                } else {
+                    if ((nStatus & MOVE_PERPETUAL_LOSS) != 0) {
+                        sprintf(szComment, "%sé•¿æ‰“ä½œè´Ÿ", cszColorStr[sd]);
+                        nResult = 3 - sd * 2;
+                    } else {
+                        strcpy(szComment, "åŒæ–¹ä¸å˜ä½œå’Œ");
+                        nResult = 2;
+                    }
+                }
+            } else { // MOVE_MATE
+                sprintf(szComment, "%sèƒœ", cszColorStr[sd]);
+                nResult = 1 + sd * 2;
+            }
+        }
     }
-    bStarted[sd] = true;
-  }
+    lppgn->nResult = nResult;
+    // äº¤æ¢èµ°å­æ–¹ï¼Œå…¶å®"sd"å’Œ"posIrrev.sdPlayer"æ˜¯åŒæ­¥çš„.
+    sd = 1 - sd;
+}
 
-  // ÏòÒıÇæ·¢ËÍµ±Ç°¾ÖÃæ
-  llTime = GetTime();
-  lpLineChar = szLineStr;
-  lpLineChar += sprintf(lpLineChar, "position fen %s - - 0 1", szIrrevFen);
-  if (posIrrev.nMoveNum > 1) {
-    lpLineChar += sprintf(lpLineChar, " moves");
-    for (i = 1; i < posIrrev.nMoveNum; i ++) {
-      dwMoveStr = MOVE_COORD(posIrrev.rbsList[i].mvs.wmv);
-      lpLineChar += sprintf(lpLineChar, " %.4s", (const char *) &dwMoveStr);
-    }
-  }
-  Send(szLineStr);
+const char* const cszGo = "go time %d increment %d opptime %d oppincrement %d";
+const char* const cszGoDraw = "go draw time %d increment %d opptime %d oppincrement %d";
 
-  // ÏòÒıÇæ·¢ËÍ½û×ÅÖ¸Áî
-  nBanMoves = 0;
-  nMoveNum = posIrrev.GenAllMoves(mvs);
-  for (i = 0; i < nMoveNum; i ++) {
-    if (posIrrev.MakeMove(mvs[i].wmv)) {
-      // Èç¹û×ßÁËºÏÀí×Å·¨£¬µ«¹¹³É³¤´ò²¢´ïµ½Á½´ÎÖØ¸´£¬Ôò¸Ã×Å·¨±ØĞëÉèÎª½û×Å
-      // ×¢Òâ£ºÏÖÔÚÒÑ¾­ÂÖµ½¶Ô·½×ß×ÓÁË£¬ËùÒÔ"REP_WIN"²Å±íÊ¾³¤´ò
-      if (posIrrev.RepStatus(2) == REP_WIN) {
-        mvBanList[nBanMoves] = mvs[i].wmv;
-        nBanMoves ++;
-      }
-      posIrrev.UndoMakeMove();
+// è®©å¼•æ“è¿è¡Œ.
+void GameStruct::RunEngine(void)
+{
+    char szLineStr[MAX_CHAR], szFileName[MAX_CHAR];
+    char* lpLineChar;
+    int i, nMoveNum, nBanMoves;
+    int mvBanList[MAX_GEN_MOVES];
+    MoveStruct mvs[MAX_GEN_MOVES];
+    uint32_t dwMoveStr;
+    FILE* fpOptionFile;
+
+    if (!bStarted[sd]) {
+        // å¦‚æœå¼•æ“å°šæœªå¯åŠ¨ï¼Œé‚£ä¹ˆå¯åŠ¨å¼•æ“.
+        llTime = GetTime();
+        LocatePath(szFileName, lpTeam[sd]->szEngineFile);
+        pipe[sd].Open(szFileName);
+        Send("ucci");
+        // å‘é€"ucci"æŒ‡ä»¤åï¼Œåœ¨10ç§’é’Ÿå†…ç­‰å¾…"ucciok"åé¦ˆä¿¡æ¯.
+        while ((int)(GetTime() - llTime) < 10000) {
+            if (Receive(szLineStr)) {
+                if (StrEqv(szLineStr, "option usemillisec ")) {
+                    bUseMilliSec[sd] = true;
+                }
+                if (StrEqv(szLineStr, "ucciok")) {
+                    break;
+                }
+            } else {
+                Idle();
+            }
+        }
+        // è®¾ç½®å¿…è¦çš„åˆå§‹åŒ–é€‰é¡¹.
+        if (League.bPromotion) {
+            Send("setoption promotion true");
+        } else {
+            Send("setoption promotion false");
+        }
+        Send("setoption ponder false");
+        Send("setoption newgame");
+        if (bUseMilliSec[sd]) {
+            Send("setoption usemillisec true");
+        }
+        // æŠŠå¼•æ“é€‰é¡¹æ–‡ä»¶çš„å†…å®¹å‘é€ç»™å¼•æ“.
+        LocatePath(szFileName, lpTeam[sd]->szOptionFile);
+        fpOptionFile = fopen(szFileName, "rt");
+        if (fpOptionFile != NULL) {
+            while (fgets(szLineStr, MAX_CHAR, fpOptionFile) != NULL) {
+                lpLineChar = strchr(szLineStr, '\n');
+                if (lpLineChar != NULL) {
+                    *lpLineChar = '\0';
+                }
+                Send(szLineStr);
+            }
+            fclose(fpOptionFile);
+        }
+        bStarted[sd] = true;
     }
-  }
-  if (nBanMoves > 0) {
+
+    // å‘å¼•æ“å‘é€å½“å‰å±€é¢.
+    llTime = GetTime();
     lpLineChar = szLineStr;
-    lpLineChar += sprintf(lpLineChar, "banmoves");
-    for (i = 0; i < nBanMoves; i ++) {
-      dwMoveStr = MOVE_COORD(mvBanList[i]);
-      lpLineChar += sprintf(lpLineChar, " %.4s", (const char *) &dwMoveStr);
+    lpLineChar += sprintf(lpLineChar, "position fen %s - - 0 1", szIrrevFen);
+    if (posIrrev.nMoveNum > 1) {
+        lpLineChar += sprintf(lpLineChar, " moves");
+        for (i = 1; i < posIrrev.nMoveNum; i++) {
+            dwMoveStr = MOVE_COORD(posIrrev.rbsList[i].mvs.wmv);
+            lpLineChar += sprintf(lpLineChar, " %.4s", (const char*)&dwMoveStr);
+        }
     }
     Send(szLineStr);
-  }
 
-  // ÏòÒıÇæ·¢ËÍ×ßÆåÖ¸Áî£º"go [draw] time %d increment %d opptime %d oppincrement %d";
-  if (lpTeam[sd]->szGoParam[0] != '\0') {
-    strcpy(szLineStr, bDraw ? "go draw " : "go ");
-    strcat(szLineStr, lpTeam[sd]->szGoParam);
-  } else if (bUseMilliSec[sd]) {
-    sprintf(szLineStr, bDraw ? cszGoDraw : cszGo, nTimer[sd],
-        League.nIncrTime * League.nStandardCpuTime, nTimer[1 - sd], League.nIncrTime * League.nStandardCpuTime);
-  } else {
-    sprintf(szLineStr, bDraw ? cszGoDraw : cszGo, nTimer[sd] / 1000,
-        League.nIncrTime * League.nStandardCpuTime / 1000, nTimer[1 - sd] / 1000,
-        League.nIncrTime * League.nStandardCpuTime / 1000);
-  }
-  Send(szLineStr);
-  bTimeout = false;
-}
-
-// ¿ªÊ¼Ò»¸öÆå¾Ö
-void GameStruct::BeginGame(int nRobin, int nRound, int nGame) {
-  int i;
-  const char *szStartFen;
-  char szFileName[16];
-  CheckStruct chkRecord;
-  time_t dwTime;
-  tm *lptm;
-
-  Live.cResult[nRobin][nRound][nGame] = 0;
-  PublishLeague();
-  League.nRemainProcs --; // ½«Ê£Óà¿ÉÓÃ´¦ÀíÆ÷ÊıÁ¿¼õÒ»
-  time(&dwTime);
-  lptm = localtime(&dwTime); // »ñµÃÊ±¼ä
-  lpTeam[0] = TeamList + RobinTable[nRound][nGame][0];
-  lpTeam[1] = TeamList + RobinTable[nRound][nGame][1];
-  sd = nCounter = nResult = 0;
-  nTimer[0] = nTimer[1] = League.nInitTime * League.nStandardCpuTime * 60;
-  bStarted[0] = bStarted[1] = bUseMilliSec[0] = bUseMilliSec[1] = bDraw = false;
-  szStartFen = League.szRobinFens[nRobin];
-  strcpy(szIrrevFen, szStartFen[0] == '\0' ? cszStartFen : szStartFen);
-  posIrrev.FromFen(szIrrevFen);
-  sd = posIrrev.sdPlayer; // ÈÃsdÓëposIrrev.sdPlayerÍ¬²½
-
-  // ºÏ³ÉÆåÆ×ÎÄ¼ş
-  lppgn = new PgnFileStruct();
-  lppgn->posStart = posIrrev;
-  sprintf(szGameFile, "%.3s-%.3s%c.PGN", (const char *) &lpTeam[0]->dwAbbr,
-      (const char *) &lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
-  strcpy(lppgn->szEvent, League.szEvent);
-  sprintf(lppgn->szRound, "%d", nRobin * League.nRoundNum + nRound + 1);
-  sprintf(lppgn->szDate, "%04d.%02d.%02d", lptm->tm_year + 1900, lptm->tm_mon + 1, lptm->tm_mday);
-  strcpy(lppgn->szSite, League.szSite);
-  strcpy(lppgn->szRed, lpTeam[0]->szEngineName);
-  sprintf(lppgn->szRedElo, "%d", lpTeam[0]->nEloValue);
-  strcpy(lppgn->szBlack, lpTeam[1]->szEngineName);
-  sprintf(lppgn->szBlackElo, "%d", lpTeam[1]->nEloValue);
-  for (i = 0; i < 20; i ++) {
-    dwFileMove[i] = 0;
-  }
-
-  // ´ò¿ªÈÕÖ¾ÎÄ¼şºÍ½ø³ÌÎÄ¼ş
-  sprintf(szFileName, "%.3s-%.3s%c.LOG", (const char *) &lpTeam[0]->dwAbbr,
-      (const char *) &lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
-  fpLogFile = fopen(szFileName, "at");
-  if (fpLogFile == NULL) {
-    printf("´íÎó£ºÎŞ·¨½¨Á¢ÈÕÖ¾ÎÄ¼ş\"%s\"!\n", szFileName);
-    exit(EXIT_FAILURE);
-  }
-  sprintf(szFileName, "%.3s-%.3s%c.CHK", (const char *) &lpTeam[0]->dwAbbr,
-      (const char *) &lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
-  CheckFile.Open(szFileName);
-
-  // Èç¹û½ø³ÌÎÄ¼şÓĞ¼ÇÂ¼£¬ÄÇÃ´ÏÈ½âÎö½ø³Ì¼ÇÂ¼µÄ×Å·¨
-  while (!CheckFile.Eof()) {
-    chkRecord = CheckFile.Read();
-    nTimer[sd] = chkRecord.nTimer;
-    AddMove(chkRecord.mv);
-    if (nResult > 0) {
-      lppgn->Write(szGameFile);
-      PublishGame(lppgn, szGameFile, FORCE_PUBLISH);
-      League.nRemainProcs ++; // ÔÚEndGame()Ö®Ç°¾ÍÊÍ·Å´¦ÀíÆ÷×ÊÔ´£¬Ìá¸ß´¦ÀíÆ÷ÀûÓÃÂÊ
-      return; // Èç¹ûÆå¾Ö½áÊø(½ø³ÌÎÄ¼şÊÇÍêÕûµÄ)£¬ÄÇÃ´¾Í²»±ØÆô¶¯ÒıÇæÁË
-    }
-  }
-  lppgn->Write(szGameFile);
-  PublishGame(lppgn, szGameFile);
-  RunEngine(); // ½ø³ÌÎÄ¼ş¶ÁÍêºó(½ø³ÌÎÄ¼ş²»ÍêÕû)£¬¾ÍĞèÒªµ÷ÓÃÒıÇæÁË
-  // ÏòÒıÇæ·¢ËÍÖ¸Áîºó£¬Æå¾Ö¾Í¹ÒÆğ£¬µÈ´ıÏÂ´Îµ÷ÓÃ"ResumeGame()"ÒÔ¼ÌĞø½øĞĞ
-}
-
-// ÍË³öÒıÇæ
-void GameStruct::QuitEngine(void) {
-  char szLineStr[MAX_CHAR];
-  for (sd = 0; sd < 2; sd ++) {
-    if (bStarted[sd]) {
-      llTime = GetTime();
-      Send("quit");
-      while ((int) (GetTime() - llTime) < 1000) {
-        if (Receive(szLineStr)) {
-          if (StrEqv(szLineStr, "bye")) {
-            break;
-          }
-        } else {
-          Idle();
+    // å‘å¼•æ“å‘é€ç¦ç€æŒ‡ä»¤.
+    nBanMoves = 0;
+    nMoveNum = posIrrev.GenAllMoves(mvs);
+    for (i = 0; i < nMoveNum; i++) {
+        if (posIrrev.MakeMove(mvs[i].wmv)) {
+            // å¦‚æœèµ°äº†åˆç†ç€æ³•ï¼Œä½†æ„æˆé•¿æ‰“å¹¶è¾¾åˆ°ä¸¤æ¬¡é‡å¤ï¼Œåˆ™è¯¥ç€æ³•å¿…é¡»è®¾ä¸ºç¦ç€.
+            // æ³¨æ„ï¼šç°åœ¨å·²ç»è½®åˆ°å¯¹æ–¹èµ°å­äº†ï¼Œæ‰€ä»¥"REP_WIN"æ‰è¡¨ç¤ºé•¿æ‰“.
+            if (posIrrev.RepStatus(2) == REP_WIN) {
+                mvBanList[nBanMoves] = mvs[i].wmv;
+                nBanMoves++;
+            }
+            posIrrev.UndoMakeMove();
         }
-      }
-      pipe[sd].Close();
     }
-  }
-  League.nRemainProcs ++; // ÔÚEndGame()Ö®Ç°¾ÍÊÍ·Å´¦ÀíÆ÷×ÊÔ´£¬Ìá¸ß´¦ÀíÆ÷ÀûÓÃÂÊ
+    if (nBanMoves > 0) {
+        lpLineChar = szLineStr;
+        lpLineChar += sprintf(lpLineChar, "banmoves");
+        for (i = 0; i < nBanMoves; i++) {
+            dwMoveStr = MOVE_COORD(mvBanList[i]);
+            lpLineChar += sprintf(lpLineChar, " %.4s", (const char*)&dwMoveStr);
+        }
+        Send(szLineStr);
+    }
+
+    // å‘å¼•æ“å‘é€èµ°æ£‹æŒ‡ä»¤ï¼š"go [draw] time %d increment %d opptime %d oppincrement %d";
+    if (lpTeam[sd]->szGoParam[0] != '\0') {
+        strcpy(szLineStr, bDraw ? "go draw " : "go ");
+        strcat(szLineStr, lpTeam[sd]->szGoParam);
+    } else if (bUseMilliSec[sd]) {
+        sprintf(szLineStr, bDraw ? cszGoDraw : cszGo, nTimer[sd],
+            League.nIncrTime * League.nStandardCpuTime, nTimer[1 - sd], League.nIncrTime * League.nStandardCpuTime);
+    } else {
+        sprintf(szLineStr, bDraw ? cszGoDraw : cszGo, nTimer[sd] / 1000,
+            League.nIncrTime * League.nStandardCpuTime / 1000, nTimer[1 - sd] / 1000,
+            League.nIncrTime * League.nStandardCpuTime / 1000);
+    }
+    Send(szLineStr);
+    bTimeout = false;
 }
 
-// ¼ÌĞøÉÏ´Î¹ÒÆğµÄÆå¾Ö
-void GameStruct::ResumeGame(void) {
-  char szLineStr[MAX_CHAR];
-  CheckStruct chkRecord;
-  char *lp;
+// å¼€å§‹ä¸€ä¸ªæ£‹å±€.
+void GameStruct::BeginGame(int nRobin, int nRound, int nGame)
+{
+    int i;
+    const char* szStartFen;
+    char szFileName[16];
+    CheckStruct chkRecord;
+    time_t dwTime;
+    tm* lptm;
 
-  // Æå¾ÖÉĞÎ´½áÊøÊ±²ÅÓĞ²Ù×÷
-  if (nResult > 0) {
-    return;
-  }
-  // Ê×ÏÈ¶ÁÈ¡ÒıÇæ·´À¡ĞÅÏ¢
-  chkRecord.mv = BESTMOVE_THINKING;
-  while (Receive(szLineStr)) {
-    lp = szLineStr;
-    if (StrEqvSkip(lp, "bestmove ")) {
-      chkRecord.mv = COORD_MOVE(*(uint32_t *) lp);
-      lp += 4;
-      if (StrScan(lp, " resign")) {
-        chkRecord.mv = BESTMOVE_RESIGN;
-      } else {
-        if (StrScan(lp, " draw")) {
-          if (bDraw) {
-            chkRecord.mv = BESTMOVE_DRAW;
-          } else {
-            bDraw = true;
-          }
-        } else {
-          bDraw = false;
-        };
-      };
-      break;
-    } else if (StrEqv(lp, "nobestmove")) {
-      chkRecord.mv = BESTMOVE_RESIGN;
-      break;
+    Live.cResult[nRobin][nRound][nGame] = 0;
+    PublishLeague();
+    League.nRemainProcs--; // å°†å‰©ä½™å¯ç”¨å¤„ç†å™¨æ•°é‡å‡ä¸€.
+    time(&dwTime);
+    lptm = localtime(&dwTime); // è·å¾—æ—¶é—´.
+    lpTeam[0] = TeamList + RobinTable[nRound][nGame][0];
+    lpTeam[1] = TeamList + RobinTable[nRound][nGame][1];
+    sd = nCounter = nResult = 0;
+    nTimer[0] = nTimer[1] = League.nInitTime * League.nStandardCpuTime * 60;
+    bStarted[0] = bStarted[1] = bUseMilliSec[0] = bUseMilliSec[1] = bDraw = false;
+    szStartFen = League.szRobinFens[nRobin];
+    strcpy(szIrrevFen, szStartFen[0] == '\0' ? cszStartFen : szStartFen);
+    posIrrev.FromFen(szIrrevFen);
+    sd = posIrrev.sdPlayer; // è®©sdä¸posIrrev.sdPlayeråŒæ­¥.
+
+    // åˆæˆæ£‹è°±æ–‡ä»¶.
+    lppgn = new PgnFileStruct();
+    lppgn->posStart = posIrrev;
+    sprintf(szGameFile, "%.3s-%.3s%c.PGN", (const char*)&lpTeam[0]->dwAbbr,
+        (const char*)&lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
+    strcpy(lppgn->szEvent, League.szEvent);
+    sprintf(lppgn->szRound, "%d", nRobin * League.nRoundNum + nRound + 1);
+    sprintf(lppgn->szDate, "%04d.%02d.%02d", lptm->tm_year + 1900, lptm->tm_mon + 1, lptm->tm_mday);
+    strcpy(lppgn->szSite, League.szSite);
+    strcpy(lppgn->szRed, lpTeam[0]->szEngineName);
+    sprintf(lppgn->szRedElo, "%d", lpTeam[0]->nEloValue);
+    strcpy(lppgn->szBlack, lpTeam[1]->szEngineName);
+    sprintf(lppgn->szBlackElo, "%d", lpTeam[1]->nEloValue);
+    for (i = 0; i < 20; i++) {
+        dwFileMove[i] = 0;
     }
-  }
-  // Èç¹ûÃ»ÓĞ¶Áµ½·´À¡×Å·¨£¬¾ÍÅĞ¶ÏÒıÇæÊÇ·ñ³¬Ê±
-  if (chkRecord.mv == BESTMOVE_THINKING) {
-    if (bTimeout) {
-      if ((int) (GetTime() - llTime) > nTimer[sd] + League.nStopTime) {
-        chkRecord.mv = BESTMOVE_TIMEOUT; // Ö»ÓĞÊ±¼ä³¬³öÍ£Ö¹Ê±¼äºó£¬²Å¸ø¿Õ×ÅÒÔ±íÊ¾³¬Ê±
-      }
-    } else {
-      if ((int) (GetTime() - llTime) > nTimer[sd]) {
-        Send("stop");
-        bTimeout = true;
-      }
+
+    // æ‰“å¼€æ—¥å¿—æ–‡ä»¶å’Œè¿›ç¨‹æ–‡ä»¶.
+    sprintf(szFileName, "%.3s-%.3s%c.LOG", (const char*)&lpTeam[0]->dwAbbr,
+        (const char*)&lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
+    fpLogFile = fopen(szFileName, "at");
+    if (fpLogFile == NULL) {
+        printf("é”™è¯¯ï¼šæ— æ³•å»ºç«‹æ—¥å¿—æ–‡ä»¶\"%s\"!\n", szFileName);
+        exit(EXIT_FAILURE);
     }
-  }
-  // Èç¹ûÓĞ·´À¡×Å·¨(°üÀ¨³¬Ê±·µ»ØµÄ¿Õ×Å)£¬¾Í×ßÕâ¸ö×Å·¨
-  if (chkRecord.mv != BESTMOVE_THINKING) {
-    nTimer[sd] -= (int) (GetTime() - llTime);
-    if (nTimer[sd] < 0) {
-      nTimer[sd] = 0;
+    sprintf(szFileName, "%.3s-%.3s%c.CHK", (const char*)&lpTeam[0]->dwAbbr,
+        (const char*)&lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
+    CheckFile.Open(szFileName);
+
+    // å¦‚æœè¿›ç¨‹æ–‡ä»¶æœ‰è®°å½•ï¼Œé‚£ä¹ˆå…ˆè§£æè¿›ç¨‹è®°å½•çš„ç€æ³•.
+    while (!CheckFile.Eof()) {
+        chkRecord = CheckFile.Read();
+        nTimer[sd] = chkRecord.nTimer;
+        AddMove(chkRecord.mv);
+        if (nResult > 0) {
+            lppgn->Write(szGameFile);
+            PublishGame(lppgn, szGameFile, FORCE_PUBLISH);
+            League.nRemainProcs++; // åœ¨EndGame()ä¹‹å‰å°±é‡Šæ”¾å¤„ç†å™¨èµ„æºï¼Œæé«˜å¤„ç†å™¨åˆ©ç”¨ç‡.
+            return; // å¦‚æœæ£‹å±€ç»“æŸ(è¿›ç¨‹æ–‡ä»¶æ˜¯å®Œæ•´çš„)ï¼Œé‚£ä¹ˆå°±ä¸å¿…å¯åŠ¨å¼•æ“äº†.
+        }
     }
-    chkRecord.nTimer = nTimer[sd];
-    CheckFile.Write(chkRecord);
-    AddMove(chkRecord.mv);
     lppgn->Write(szGameFile);
-    PublishGame(lppgn, szGameFile, nResult > 0);
-    if (nResult == 0) {
-      RunEngine(); // Èç¹ûÆå¾ÖÉĞÎ´½áÊø£¬ÄÇÃ´ÈÃÒıÇæË¼¿¼ÏÂÒ»²½Æå
-    } else {
-      // Èç¹ûÆå¾ÖÒÑ¾­½áÊø£¬ÄÇÃ´ÖÕÖ¹Á½¸öÒıÇæ
-      QuitEngine();
+    PublishGame(lppgn, szGameFile);
+    RunEngine(); // è¿›ç¨‹æ–‡ä»¶è¯»å®Œå(è¿›ç¨‹æ–‡ä»¶ä¸å®Œæ•´)ï¼Œå°±éœ€è¦è°ƒç”¨å¼•æ“äº†.
+    // å‘å¼•æ“å‘é€æŒ‡ä»¤åï¼Œæ£‹å±€å°±æŒ‚èµ·ï¼Œç­‰å¾…ä¸‹æ¬¡è°ƒç”¨"ResumeGame()"ä»¥ç»§ç»­è¿›è¡Œ.
+}
+
+// é€€å‡ºå¼•æ“.
+void GameStruct::QuitEngine(void)
+{
+    char szLineStr[MAX_CHAR];
+    for (sd = 0; sd < 2; sd++) {
+        if (bStarted[sd]) {
+            llTime = GetTime();
+            Send("quit");
+            while ((int)(GetTime() - llTime) < 1000) {
+                if (Receive(szLineStr)) {
+                    if (StrEqv(szLineStr, "bye")) {
+                        break;
+                    }
+                } else {
+                    Idle();
+                }
+            }
+            pipe[sd].Close();
+        }
     }
-  }
+    League.nRemainProcs++; // åœ¨EndGame()ä¹‹å‰å°±é‡Šæ”¾å¤„ç†å™¨èµ„æºï¼Œæé«˜å¤„ç†å™¨åˆ©ç”¨ç‡.
+}
+
+// ç»§ç»­ä¸Šæ¬¡æŒ‚èµ·çš„æ£‹å±€.
+void GameStruct::ResumeGame(void)
+{
+    char szLineStr[MAX_CHAR];
+    CheckStruct chkRecord;
+    char* lp;
+
+    // æ£‹å±€å°šæœªç»“æŸæ—¶æ‰æœ‰æ“ä½œ.
+    if (nResult > 0) {
+        return;
+    }
+    // é¦–å…ˆè¯»å–å¼•æ“åé¦ˆä¿¡æ¯.
+    chkRecord.mv = BESTMOVE_THINKING;
+    while (Receive(szLineStr)) {
+        lp = szLineStr;
+        if (StrEqvSkip(lp, "bestmove ")) {
+            chkRecord.mv = COORD_MOVE(*(uint32_t*)lp);
+            lp += 4;
+            if (StrScan(lp, " resign")) {
+                chkRecord.mv = BESTMOVE_RESIGN;
+            } else {
+                if (StrScan(lp, " draw")) {
+                    if (bDraw) {
+                        chkRecord.mv = BESTMOVE_DRAW;
+                    } else {
+                        bDraw = true;
+                    }
+                } else {
+                    bDraw = false;
+                };
+            };
+            break;
+        } else if (StrEqv(lp, "nobestmove")) {
+            chkRecord.mv = BESTMOVE_RESIGN;
+            break;
+        }
+    }
+    // å¦‚æœæ²¡æœ‰è¯»åˆ°åé¦ˆç€æ³•ï¼Œå°±åˆ¤æ–­å¼•æ“æ˜¯å¦è¶…æ—¶.
+    if (chkRecord.mv == BESTMOVE_THINKING) {
+        if (bTimeout) {
+            if ((int)(GetTime() - llTime) > nTimer[sd] + League.nStopTime) {
+                chkRecord.mv = BESTMOVE_TIMEOUT; // åªæœ‰æ—¶é—´è¶…å‡ºåœæ­¢æ—¶é—´åï¼Œæ‰ç»™ç©ºç€ä»¥è¡¨ç¤ºè¶…æ—¶.
+            }
+        } else {
+            if ((int)(GetTime() - llTime) > nTimer[sd]) {
+                Send("stop");
+                bTimeout = true;
+            }
+        }
+    }
+    // å¦‚æœæœ‰åé¦ˆç€æ³•(åŒ…æ‹¬è¶…æ—¶è¿”å›çš„ç©ºç€)ï¼Œå°±èµ°è¿™ä¸ªç€æ³•.
+    if (chkRecord.mv != BESTMOVE_THINKING) {
+        nTimer[sd] -= (int)(GetTime() - llTime);
+        if (nTimer[sd] < 0) {
+            nTimer[sd] = 0;
+        }
+        chkRecord.nTimer = nTimer[sd];
+        CheckFile.Write(chkRecord);
+        AddMove(chkRecord.mv);
+        lppgn->Write(szGameFile);
+        PublishGame(lppgn, szGameFile, nResult > 0);
+        if (nResult == 0) {
+            RunEngine(); // å¦‚æœæ£‹å±€å°šæœªç»“æŸï¼Œé‚£ä¹ˆè®©å¼•æ“æ€è€ƒä¸‹ä¸€æ­¥æ£‹.
+        } else {
+            // å¦‚æœæ£‹å±€å·²ç»ç»“æŸï¼Œé‚£ä¹ˆç»ˆæ­¢ä¸¤ä¸ªå¼•æ“.
+            QuitEngine();
+        }
+    }
 }
 
 const struct ResultStruct {
-  int nHomeWin, nHomeDraw, nHomeLoss, nHomeScore, nAwayWin, nAwayDraw, nAwayLoss, nAwayScore;
-  double dfWHome;
-  const char *szResultStr;
+    int nHomeWin, nHomeDraw, nHomeLoss, nHomeScore, nAwayWin, nAwayDraw, nAwayLoss, nAwayScore;
+    double dfWHome;
+    const char* szResultStr;
 } ResultList[4] = {
-  {0, 0, 0, 0, 0, 0, 0, 0, 0.0, "       "},
-  {1, 0, 0, 2, 0, 0, 1, 0, 1.0, "  1-0  "},
-  {0, 1, 0, 1, 0, 1, 0, 1, 0.5, "1/2-1/2"},
-  {0, 0, 1, 0, 1, 0, 0, 2, 0.0, "  0-1  "}
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0.0, "       " },
+    { 1, 0, 0, 2, 0, 0, 1, 0, 1.0, "  1-0  " },
+    { 0, 1, 0, 1, 0, 1, 0, 1, 0.5, "1/2-1/2" },
+    { 0, 0, 1, 0, 1, 0, 0, 2, 0.0, "  0-1  " }
 };
 
-inline void PrintDup(int nChar, int nDup) {
-  int i;
-  for (i = 0; i < nDup; i ++) {
-    putchar(nChar);
-  }
-}
-
-// ÖÕÖ¹Ò»¸öÆå¾Ö
-bool GameStruct::EndGame(int nRobin, int nRound, int nGame) {
-  double dfWeHome;
-  const ResultStruct *lpResult;
-
-  if (nResult == 0) {
-    return false;
-  }
-  delete lppgn;
-  fclose(fpLogFile);
-  CheckFile.Close();
-  // Èç¹ûÆå¾ÖÒÑ¾­Íê³É£¬ÄÇÃ´¼ÆËã³É¼¨
-  dfWeHome = 1.0 / (1.0 + pow(10.0, (double) (lpTeam[1]->nEloValue - lpTeam[0]->nEloValue) / 400.0));
-  lpResult = ResultList + nResult;
-  lpTeam[0]->nWin += lpResult->nHomeWin;
-  lpTeam[0]->nDraw += lpResult->nHomeDraw;
-  lpTeam[0]->nLoss += lpResult->nHomeLoss;
-  lpTeam[0]->nScore += lpResult->nHomeScore;
-  lpTeam[1]->nWin += lpResult->nAwayWin;
-  lpTeam[1]->nDraw += lpResult->nAwayDraw;
-  lpTeam[1]->nLoss += lpResult->nAwayLoss;
-  lpTeam[1]->nScore += lpResult->nAwayScore;
-  lpTeam[0]->nEloValue += (int) ((lpResult->dfWHome - dfWeHome) * lpTeam[0]->nKValue);
-  lpTeam[1]->nEloValue += (int) ((dfWeHome - lpResult->dfWHome) * lpTeam[1]->nKValue);
-  // Ã¿ÂÖµÄµÚÒ»¾ÖÆåÏÔÊ¾ÂÖ´Î
-  if (nGame == 0) {
-    printf("µÚ %d ÂÖ£º\n\n", nRobin * League.nRoundNum + nRound + 1);
-  }
-  // Êä³öÆå¾Ö½á¹û
-  printf("%s", lpTeam[0]->szEngineName);
-  PrintDup(' ', League.nNameLen - strlen(lpTeam[0]->szEngineName));
-  printf(" %s %s", lpResult->szResultStr, lpTeam[1]->szEngineName);
-  PrintDup(' ', League.nNameLen - strlen(lpTeam[1]->szEngineName));
-  printf(" (%.3s-%.3s%c.PGN)\n", (const char *) &lpTeam[0]->dwAbbr,
-      (const char *) &lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
-  fflush(stdout);
-  // ÕûÀíÖ±²¥
-  Live.cResult[nRobin][nRound][nGame] = nResult;
-  PublishLeague();
-  return true;
-}
-
-// ÖĞ¶ÏÒ»¸öÆå¾Ö
-void GameStruct::TerminateGame(void) {
-  if (nResult == 0) {
-    if (!bTimeout) {
-      Send("stop");
+inline void PrintDup(int nChar, int nDup)
+{
+    int i;
+    for (i = 0; i < nDup; i++) {
+        putchar(nChar);
     }
-    QuitEngine();
-  }
-  delete lppgn;
-  fclose(fpLogFile);
-  CheckFile.Close();
 }
 
-// Êä³öÅÅÃû±í
-static void PrintRankList(void) {
-  int i, j, nLastRank, nLastScore;
-  int nSortList[MAX_TEAM];
-  TeamStruct *lpTeam;
-  // Êä³ö±íÍ·
-  printf("   ËõĞ´ ÒıÇæÃû³Æ");
-  PrintDup(' ', League.nNameLen - 8);
-  printf(" ELO  K   Ê¤  ºÍ  ¸º »ı·Ö\n");
-  PrintDup('=', League.nNameLen - 8);
-  printf("================" "==========================\n");
-  for (i = 0; i < League.nTeamNum; i ++) {
-    nSortList[i] = i;
-  }
-  // ÓÃÃ°ÅİÅÅĞò·¨°´»ı·ÖÅÅĞò
-  for (i = 0; i < League.nTeamNum - 1; i ++) {
-    for (j = League.nTeamNum - 1; j > i; j --) {
-      if (TeamList[nSortList[j - 1]].nScore < TeamList[nSortList[j]].nScore) {
-        SWAP(nSortList[j - 1], nSortList[j]);
-      }
+// ç»ˆæ­¢ä¸€ä¸ªæ£‹å±€.
+bool GameStruct::EndGame(int nRobin, int nRound, int nGame)
+{
+    double dfWeHome;
+    const ResultStruct* lpResult;
+
+    if (nResult == 0) {
+        return false;
     }
-  }
-  // ÒÀ´ÎÏÔÊ¾Ãû´Î£¬Èç¹û»ı·ÖºÍÇ°Ò»¸ö¶ÓÏàÍ¬£¬ÄÇÃ´Ãû´ÎÒ²ºÍÇ°Ò»¸ö¶ÓÏàÍ¬
-  nLastRank = nLastScore = 0;
-  for (i = 0; i < League.nTeamNum; i ++) {
-    lpTeam = TeamList + nSortList[i];
-    if (lpTeam->nScore != nLastScore) {
-      nLastRank = i;
-      nLastScore = lpTeam->nScore;
+    delete lppgn;
+    fclose(fpLogFile);
+    CheckFile.Close();
+    // å¦‚æœæ£‹å±€å·²ç»å®Œæˆï¼Œé‚£ä¹ˆè®¡ç®—æˆç»©.
+    dfWeHome = 1.0 / (1.0 + pow(10.0, (double)(lpTeam[1]->nEloValue - lpTeam[0]->nEloValue) / 400.0));
+    lpResult = ResultList + nResult;
+    lpTeam[0]->nWin += lpResult->nHomeWin;
+    lpTeam[0]->nDraw += lpResult->nHomeDraw;
+    lpTeam[0]->nLoss += lpResult->nHomeLoss;
+    lpTeam[0]->nScore += lpResult->nHomeScore;
+    lpTeam[1]->nWin += lpResult->nAwayWin;
+    lpTeam[1]->nDraw += lpResult->nAwayDraw;
+    lpTeam[1]->nLoss += lpResult->nAwayLoss;
+    lpTeam[1]->nScore += lpResult->nAwayScore;
+    lpTeam[0]->nEloValue += (int)((lpResult->dfWHome - dfWeHome) * lpTeam[0]->nKValue);
+    lpTeam[1]->nEloValue += (int)((dfWeHome - lpResult->dfWHome) * lpTeam[1]->nKValue);
+    // æ¯è½®çš„ç¬¬ä¸€å±€æ£‹æ˜¾ç¤ºè½®æ¬¡.
+    if (nGame == 0) {
+        printf("ç¬¬ %d è½®ï¼š\n\n", nRobin * League.nRoundNum + nRound + 1);
     }
-    printf("%2d %.3s  %s", nLastRank + 1, (const char *) &lpTeam->dwAbbr, lpTeam->szEngineName);
-    PrintDup(' ', League.nNameLen - strlen(lpTeam->szEngineName));
-    printf(" %4d %2d %3d %3d %3d %3d%s\n", lpTeam->nEloValue, lpTeam->nKValue, lpTeam->nWin,
-        lpTeam->nDraw, lpTeam->nLoss, lpTeam->nScore / 2, lpTeam->nScore % 2 == 0 ? "" : ".5");
-  }
-  PrintDup('=', League.nNameLen - 8);      
-  printf("================" "==========================\n\n");
-  //     "   ËõĞ´ ÒıÇæÃû³Æ" " ELO  K   Ê¤  ºÍ  ¸º »ı·Ö"
+    // è¾“å‡ºæ£‹å±€ç»“æœ.
+    printf("%s", lpTeam[0]->szEngineName);
+    PrintDup(' ', League.nNameLen - strlen(lpTeam[0]->szEngineName));
+    printf(" %s %s", lpResult->szResultStr, lpTeam[1]->szEngineName);
+    PrintDup(' ', League.nNameLen - strlen(lpTeam[1]->szEngineName));
+    printf(" (%.3s-%.3s%c.PGN)\n", (const char*)&lpTeam[0]->dwAbbr,
+        (const char*)&lpTeam[1]->dwAbbr, cszRobinChar[nRobin]);
+    fflush(stdout);
+    // æ•´ç†ç›´æ’­.
+    Live.cResult[nRobin][nRound][nGame] = nResult;
+    PublishLeague();
+    return true;
 }
 
-// Æå¾Ö¶ÓÁĞÕ¼ÓÃ´óÁ¿¿Õ¼ä£¬ËùÒÔ±ØĞëÓÃÈ«¾Ö±äÁ¿
+// ä¸­æ–­ä¸€ä¸ªæ£‹å±€.
+void GameStruct::TerminateGame(void)
+{
+    if (nResult == 0) {
+        if (!bTimeout) {
+            Send("stop");
+        }
+        QuitEngine();
+    }
+    delete lppgn;
+    fclose(fpLogFile);
+    CheckFile.Close();
+}
+
+// è¾“å‡ºæ’åè¡¨.
+static void PrintRankList(void)
+{
+    int i, j, nLastRank, nLastScore;
+    int nSortList[MAX_TEAM];
+    TeamStruct* lpTeam;
+    // è¾“å‡ºè¡¨å¤´.
+    printf("   ç¼©å†™ å¼•æ“åç§°");
+    PrintDup(' ', League.nNameLen - 8);
+    printf(" ELO  K   èƒœ  å’Œ  è´Ÿ ç§¯åˆ†\n");
+    PrintDup('=', League.nNameLen - 8);
+    printf("================"
+           "==========================\n");
+    for (i = 0; i < League.nTeamNum; i++) {
+        nSortList[i] = i;
+    }
+    // ç”¨å†’æ³¡æ’åºæ³•æŒ‰ç§¯åˆ†æ’åº.
+    for (i = 0; i < League.nTeamNum - 1; i++) {
+        for (j = League.nTeamNum - 1; j > i; j--) {
+            if (TeamList[nSortList[j - 1]].nScore < TeamList[nSortList[j]].nScore) {
+                SWAP(nSortList[j - 1], nSortList[j]);
+            }
+        }
+    }
+    // ä¾æ¬¡æ˜¾ç¤ºåæ¬¡ï¼Œå¦‚æœç§¯åˆ†å’Œå‰ä¸€ä¸ªé˜Ÿç›¸åŒï¼Œé‚£ä¹ˆåæ¬¡ä¹Ÿå’Œå‰ä¸€ä¸ªé˜Ÿç›¸åŒ.
+    nLastRank = nLastScore = 0;
+    for (i = 0; i < League.nTeamNum; i++) {
+        lpTeam = TeamList + nSortList[i];
+        if (lpTeam->nScore != nLastScore) {
+            nLastRank = i;
+            nLastScore = lpTeam->nScore;
+        }
+        printf("%2d %.3s  %s", nLastRank + 1, (const char*)&lpTeam->dwAbbr, lpTeam->szEngineName);
+        PrintDup(' ', League.nNameLen - strlen(lpTeam->szEngineName));
+        printf(" %4d %2d %3d %3d %3d %3d%s\n", lpTeam->nEloValue, lpTeam->nKValue, lpTeam->nWin,
+            lpTeam->nDraw, lpTeam->nLoss, lpTeam->nScore / 2, lpTeam->nScore % 2 == 0 ? "" : ".5");
+    }
+    PrintDup('=', League.nNameLen - 8);
+    printf("================"
+           "==========================\n\n");
+    //     "   ç¼©å†™ å¼•æ“åç§°" " ELO  K   èƒœ  å’Œ  è´Ÿ ç§¯åˆ†"
+}
+
+// æ£‹å±€é˜Ÿåˆ—å ç”¨å¤§é‡ç©ºé—´ï¼Œæ‰€ä»¥å¿…é¡»ç”¨å…¨å±€å˜é‡.
 static GameStruct GameList[QUEUE_LEN];
 
-// ²¶»ñCtrl-CºÍCtrl-Break
-static void signal_handler(int sig) {
-  signal(sig, signal_handler);
-  League.bRunning = false;
+// æ•è·Ctrl-Cå’ŒCtrl-Break
+static void signal_handler(int sig)
+{
+    signal(sig, signal_handler);
+    League.bRunning = false;
 }
 
-// Ö÷Àı³Ì
-int main(void) {
-  // ÒÔÏÂ±äÁ¿Ç£ÉæÊäÈë±¨¸æµÄ¶ÁÈ¡
-  char szLineStr[MAX_CHAR];
-  char *lp;
-  FILE *fpIniFile;
-  TeamStruct *lpTeam;
-  int i, j, k, nRobinFen, nSocket;
-  int nEngineFileLen; // ÒıÇæÎÄ¼şµÄ×î´ó³¤¶È
-  // ÒÔÏÂ±äÁ¿Ç£Éæµ½Æå¾Ö¶ÓÁĞµÄ¿ØÖÆ
-  int nRobinPush, nRoundPush, nGamePush;
-  int nRobinPop, nRoundPop, nGamePop;
-  int nQueueBegin, nQueueEnd, nQueueIndex;
+// ä¸»ä¾‹ç¨‹.
+int main(void)
+{
+    // ä»¥ä¸‹å˜é‡ç‰µæ¶‰è¾“å…¥æŠ¥å‘Šçš„è¯»å–.
+    char szLineStr[MAX_CHAR];
+    char* lp;
+    FILE* fpIniFile;
+    TeamStruct* lpTeam;
+    int i, j, k, nRobinFen, nSocket;
+    int nEngineFileLen; // å¼•æ“æ–‡ä»¶çš„æœ€å¤§é•¿åº¦.
+    // ä»¥ä¸‹å˜é‡ç‰µæ¶‰åˆ°æ£‹å±€é˜Ÿåˆ—çš„æ§åˆ¶.
+    int nRobinPush, nRoundPush, nGamePush;
+    int nRobinPop, nRoundPop, nGamePop;
+    int nQueueBegin, nQueueEnd, nQueueIndex;
 
-  // Ê×ÏÈÊÇ¶ÁÈ¡ÊäÈë±¨¸æ
-  League.nTeamNum = League.nInitTime = League.nIncrTime = League.nStopTime = 0;
-  League.nRemainProcs = League.nRobinNum = 1;
-  League.nStandardCpuTime = 1000;
-  League.nNameLen = nEngineFileLen = 8; // ÒıÇæÃû³ÆºÍÒıÇæÎÄ¼şµÄ×îĞ¡³¤¶È
-  League.bPromotion = false;
-  League.szEvent[0] = League.szSite[0] = '\0';
-  Live.szHost[0] = Live.szPath[0] = Live.szPassword[0] = Live.szCounter[0] = '\0';
-  Live.szProxyHost[0] = Live.szProxyUser[0] = Live.szProxyPassword[0] = '\0';
-  strcpy(Live.szExt, "htm");
-  Live.nPort = Live.nProxyPort = 80;
-  Live.nRefresh = Live.nInterval = 0;
-  nRobinFen = 0;
+    // é¦–å…ˆæ˜¯è¯»å–è¾“å…¥æŠ¥å‘Š.
+    League.nTeamNum = League.nInitTime = League.nIncrTime = League.nStopTime = 0;
+    League.nRemainProcs = League.nRobinNum = 1;
+    League.nStandardCpuTime = 1000;
+    League.nNameLen = nEngineFileLen = 8; // å¼•æ“åç§°å’Œå¼•æ“æ–‡ä»¶çš„æœ€å°é•¿åº¦.
+    League.bPromotion = false;
+    League.szEvent[0] = League.szSite[0] = '\0';
+    Live.szHost[0] = Live.szPath[0] = Live.szPassword[0] = Live.szCounter[0] = '\0';
+    Live.szProxyHost[0] = Live.szProxyUser[0] = Live.szProxyPassword[0] = '\0';
+    strcpy(Live.szExt, "htm");
+    Live.nPort = Live.nProxyPort = 80;
+    Live.nRefresh = Live.nInterval = 0;
+    nRobinFen = 0;
 
-  LocatePath(szLineStr, "UCCILEAG.INI");
-  fpIniFile = fopen(szLineStr, "rt");
-  if (fpIniFile == NULL) {
-    printf("´íÎó£ºÎŞ·¨´ò¿ªÅäÖÃÎÄ¼ş\"%s\"£¡\n", szLineStr);
-    return 0;
-  }
-  for (i = 0; i < MAX_ROBIN; i ++) {
-    League.szRobinFens[i][0] = '\0';
-  }
-  while (fgets(szLineStr, MAX_CHAR, fpIniFile) != NULL) {
-    StrCutCrLf(szLineStr);
-    lp = szLineStr;
-    if (false) {
-    } else if (StrEqvSkip(lp, "Event=")) {
-      strcpy(League.szEvent, lp);
-    } else if (StrEqvSkip(lp, "Site=")) {
-      strcpy(League.szSite, lp);
-    } else if (StrEqvSkip(lp, "Roundrobins=")) {
-      League.nRobinNum = Str2Digit(lp, 1, MAX_ROBIN);
-    } else if (StrEqvSkip(lp, "Processors=")) {
-      League.nRemainProcs = Str2Digit(lp, 1, MAX_PROCESSORS);
-    } else if (StrEqvSkip(lp, "InitialTime=")) {
-      League.nInitTime = Str2Digit(lp, 1, 500);
-    } else if (StrEqvSkip(lp, "IncrementalTime=")) {
-      League.nIncrTime = Str2Digit(lp, 0, 500);
-    } else if (StrEqvSkip(lp, "StoppingTime=")) {
-      League.nStopTime = Str2Digit(lp, 0, 500);
-    } else if (StrEqvSkip(lp, "StandardCpuTime=")) {
-      League.nStandardCpuTime = Str2Digit(lp, 100, 10000);
-    } else if (StrEqvSkip(lp, "Promotion=")) {
-      if (StrEqv(lp, "True")) {
-        League.bPromotion = true;
-      } else if (StrEqv(lp, "On")) {
-        League.bPromotion = true;
-      }
-    // 3.8ĞÂ¹¦ÄÜ£ºÉè¶¨³õÊ¼¾ÖÃæ
-    } else if (StrEqvSkip(lp, "Position=")) {
-      if (nRobinFen < MAX_ROBIN) {
-        strcpy(League.szRobinFens[nRobinFen], lp);
-        nRobinFen ++;
-      }
-    } else if (StrEqvSkip(lp, "Team=")) {
-      if (League.nTeamNum < MAX_TEAM) {
-        lpTeam = TeamList + League.nTeamNum;
-        lpTeam->dwAbbr = *(uint32_t *) lp;
-        StrSplitSkip(lp, ',');
-        StrSplitSkip(lp, ',', lpTeam->szEngineName);
-        League.nNameLen = MAX(League.nNameLen, (int) strlen(lpTeam->szEngineName));
-        lpTeam->nEloValue = Str2Digit(lp, 0, 9999);
-        StrSplitSkip(lp, ',');        
-        lpTeam->nKValue = Str2Digit(lp, 0, 99);
-        StrSplitSkip(lp, ',');
-        StrSplitSkip(lp, ',', lpTeam->szEngineFile);
-        nEngineFileLen = MAX(nEngineFileLen, (int) strlen(lpTeam->szEngineFile));
-        StrSplitSkip(lp, ',', lpTeam->szOptionFile);
-        StrSplitSkip(lp, ',', lpTeam->szUrl);
-        StrSplitSkip(lp, ',', lpTeam->szGoParam);
-        League.nTeamNum ++;
-      }
-    // ÒÔÏÂ²ÎÊıÖ»¸ú×ª²¥ÓĞ¹Ø
-    } else if (StrEqvSkip(lp, "Host=")) {
-      strcpy(Live.szHost, lp);     // Ö±²¥Ö÷»ú
-    } else if (StrEqvSkip(lp, "Path=")) {
-      strcpy(Live.szPath, lp);     // ÉÏ´«Ò³ÃæÂ·¾¶
-    } else if (StrEqvSkip(lp, "Password=")) {
-      strcpy(Live.szPassword, lp); // ÉÏ´«Ò³Ãæ¿ÚÁî
-    } else if (StrEqvSkip(lp, "Extension=")) {
-      strcpy(Live.szExt, lp);      // ÉÏ´«ÎÄ¼şºó×º
-    } else if (StrEqvSkip(lp, "Counter=")) {
-      strcpy(Live.szCounter, lp);  // ¼ÆÊıÆ÷Â·¾¶
-    } else if (StrEqvSkip(lp, "Header=")) {
-      strcpy(Live.szHeader, lp);   // Ò³Ã¼Â·¾¶
-    } else if (StrEqvSkip(lp, "Footer=")) {
-      strcpy(Live.szFooter, lp);   // Ò³½ÅÂ·¾¶
-    } else if (StrEqvSkip(lp, "Port=")) {
-      Live.nPort = Str2Digit(lp, 1, 65535);      // HTTP¶Ë¿Ú
-    } else if (StrEqvSkip(lp, "Refresh=")) {
-      Live.nRefresh = Str2Digit(lp, 0, 60);      // Ò³Ãæ×Ô¶¯Ë¢ĞÂÊ±¼ä(Ãë)
-    } else if (StrEqvSkip(lp, "Interval=")) {
-      Live.nInterval = Str2Digit(lp, 0, 60000);  // ÉÏ´«ÎÄ¼ş¼ä¸ôÊ±¼ä(ºÁÃë)
-    } else if (StrEqvSkip(lp, "ProxyHost=")) {
-      strcpy(Live.szProxyHost, lp);              // ´úÀíÖ÷»ú
-    } else if (StrEqvSkip(lp, "ProxyPort=")) {
-      Live.nProxyPort = Str2Digit(lp, 1, 65535); // ´úÀí¶Ë¿Ú
-    } else if (StrEqvSkip(lp, "ProxyUser=")) {
-      strcpy(Live.szProxyUser, lp);              // ´úÀíÓÃ»§Ãû
-      Live.szProxyUser[1024] = '\0';
-    } else if (StrEqvSkip(lp, "ProxyPassword=")) {
-      strcpy(Live.szProxyPassword, lp);          // ´úÀí¿ÚÁî
-      Live.szProxyPassword[1024] = '\0';
+    LocatePath(szLineStr, "UCCILEAG.INI");
+    fpIniFile = fopen(szLineStr, "rt");
+    if (fpIniFile == NULL) {
+        printf("é”™è¯¯ï¼šæ— æ³•æ‰“å¼€é…ç½®æ–‡ä»¶\"%s\"ï¼\n", szLineStr);
+        return 0;
     }
-  }
-  fclose(fpIniFile);
-  if (League.nTeamNum < 2) {
-    printf("´íÎó£ºÖÁÉÙĞèÒªÁ½¸ö²ÎÈü¶Ó£¡\n");
-    return 0;
-  }
-  printf("#======================#\n");
-  printf("$ UCCIÒıÇæÁªÈüÊä³ö±¨¸æ $\n");
-  printf("#======================#\n\n");
-  printf("ÈüÊÂ£º¡¡¡¡%s\n", League.szEvent);
-  printf("µØµã£º¡¡¡¡%s\n", League.szSite);
-  printf("²ÎÈü¶ÓÊı£º%d\n", League.nTeamNum);
-  printf("´¦ÀíÆ÷Êı£º%d\n", League.nRemainProcs);
-  printf("Ñ­»·´ÎÊı£º%d\n", League.nRobinNum);
-  printf("³õÊ¼Ê±¼ä£º%-4d ·ÖÖÓ\n", League.nInitTime);
-  printf("Ã¿²½¼ÓÊ±£º%-4d Ãë\n", League.nIncrTime);
-  printf("Í£Ö¹Ê±¼ä£º%-4d ºÁÃë\n", League.nStopTime);
-  printf("»»Ëã±ÈÀı£º%-4d ºÁÃë\n", League.nStandardCpuTime);
-  if (League.bPromotion) {
-    printf("¹æÔò£º¡¡¡¡ÔÊĞíÊË(Ê¿)Ïà(Ïó)Éı±ä³É±ø(×ä)\n");
-  }
-  printf("Ä£ÄâÆ÷£º¡¡UCCIÒıÇæÁªÈüÄ£ÄâÆ÷ 3.8\n\n");
-  printf("²ÎÈüÒıÇæ£º\n\n");
-  printf("   ËõĞ´ ÒıÇæÃû³Æ");
-  PrintDup(' ', League.nNameLen - 8);
-  printf(" ELO  K  ÒıÇæ³ÌĞò");
-  PrintDup(' ', nEngineFileLen - 8);
-  printf(" ÅäÖÃÎÄ¼ş\n");
-  PrintDup('=', League.nNameLen + nEngineFileLen - 16);
-  printf("================" "=================" "============\n");
-  for (i = 0; i < League.nTeamNum; i ++) {
-    lpTeam = TeamList + i;
-    printf("%2d %.3s  %s", i + 1, (const char *) &lpTeam->dwAbbr, lpTeam->szEngineName);
-    PrintDup(' ', League.nNameLen - strlen(lpTeam->szEngineName));
-    printf(" %4d %2d %s", lpTeam->nEloValue, lpTeam->nKValue, lpTeam->szEngineFile);
-    PrintDup(' ', nEngineFileLen - strlen(lpTeam->szEngineFile));
-    printf(" %s\n", lpTeam->szOptionFile);
-  }
-  PrintDup('=', League.nNameLen + nEngineFileLen - 16);
-  printf("================" "=================" "============\n\n");
-  //     "   ËõĞ´ ÒıÇæÃû³Æ" " ELO  K  ÒıÇæÎÄ¼ş" " ÅäÖÃÎÄ¼ş"
+    for (i = 0; i < MAX_ROBIN; i++) {
+        League.szRobinFens[i][0] = '\0';
+    }
+    while (fgets(szLineStr, MAX_CHAR, fpIniFile) != NULL) {
+        StrCutCrLf(szLineStr);
+        lp = szLineStr;
+        if (false) {
+        } else if (StrEqvSkip(lp, "Event=")) {
+            strcpy(League.szEvent, lp);
+        } else if (StrEqvSkip(lp, "Site=")) {
+            strcpy(League.szSite, lp);
+        } else if (StrEqvSkip(lp, "Roundrobins=")) {
+            League.nRobinNum = Str2Digit(lp, 1, MAX_ROBIN);
+        } else if (StrEqvSkip(lp, "Processors=")) {
+            League.nRemainProcs = Str2Digit(lp, 1, MAX_PROCESSORS);
+        } else if (StrEqvSkip(lp, "InitialTime=")) {
+            League.nInitTime = Str2Digit(lp, 1, 500);
+        } else if (StrEqvSkip(lp, "IncrementalTime=")) {
+            League.nIncrTime = Str2Digit(lp, 0, 500);
+        } else if (StrEqvSkip(lp, "StoppingTime=")) {
+            League.nStopTime = Str2Digit(lp, 0, 500);
+        } else if (StrEqvSkip(lp, "StandardCpuTime=")) {
+            League.nStandardCpuTime = Str2Digit(lp, 100, 10000);
+        } else if (StrEqvSkip(lp, "Promotion=")) {
+            if (StrEqv(lp, "True")) {
+                League.bPromotion = true;
+            } else if (StrEqv(lp, "On")) {
+                League.bPromotion = true;
+            }
+            // 3.8æ–°åŠŸèƒ½ï¼šè®¾å®šåˆå§‹å±€é¢.
+        } else if (StrEqvSkip(lp, "Position=")) {
+            if (nRobinFen < MAX_ROBIN) {
+                strcpy(League.szRobinFens[nRobinFen], lp);
+                nRobinFen++;
+            }
+        } else if (StrEqvSkip(lp, "Team=")) {
+            if (League.nTeamNum < MAX_TEAM) {
+                lpTeam = TeamList + League.nTeamNum;
+                lpTeam->dwAbbr = *(uint32_t*)lp;
+                StrSplitSkip(lp, ',');
+                StrSplitSkip(lp, ',', lpTeam->szEngineName);
+                League.nNameLen = MAX(League.nNameLen, (int)strlen(lpTeam->szEngineName));
+                lpTeam->nEloValue = Str2Digit(lp, 0, 9999);
+                StrSplitSkip(lp, ',');
+                lpTeam->nKValue = Str2Digit(lp, 0, 99);
+                StrSplitSkip(lp, ',');
+                StrSplitSkip(lp, ',', lpTeam->szEngineFile);
+                nEngineFileLen = MAX(nEngineFileLen, (int)strlen(lpTeam->szEngineFile));
+                StrSplitSkip(lp, ',', lpTeam->szOptionFile);
+                StrSplitSkip(lp, ',', lpTeam->szUrl);
+                StrSplitSkip(lp, ',', lpTeam->szGoParam);
+                League.nTeamNum++;
+            }
+            // ä»¥ä¸‹å‚æ•°åªè·Ÿè½¬æ’­æœ‰å…³.
+        } else if (StrEqvSkip(lp, "Host=")) {
+            strcpy(Live.szHost, lp); // ç›´æ’­ä¸»æœº.
+        } else if (StrEqvSkip(lp, "Path=")) {
+            strcpy(Live.szPath, lp); // ä¸Šä¼ é¡µé¢è·¯å¾„.
+        } else if (StrEqvSkip(lp, "Password=")) {
+            strcpy(Live.szPassword, lp); // ä¸Šä¼ é¡µé¢å£ä»¤.
+        } else if (StrEqvSkip(lp, "Extension=")) {
+            strcpy(Live.szExt, lp); // ä¸Šä¼ æ–‡ä»¶åç¼€.
+        } else if (StrEqvSkip(lp, "Counter=")) {
+            strcpy(Live.szCounter, lp); // è®¡æ•°å™¨è·¯å¾„.
+        } else if (StrEqvSkip(lp, "Header=")) {
+            strcpy(Live.szHeader, lp); // é¡µçœ‰è·¯å¾„.
+        } else if (StrEqvSkip(lp, "Footer=")) {
+            strcpy(Live.szFooter, lp); // é¡µè„šè·¯å¾„.
+        } else if (StrEqvSkip(lp, "Port=")) {
+            Live.nPort = Str2Digit(lp, 1, 65535); // HTTPç«¯å£.
+        } else if (StrEqvSkip(lp, "Refresh=")) {
+            Live.nRefresh = Str2Digit(lp, 0, 60); // é¡µé¢è‡ªåŠ¨åˆ·æ–°æ—¶é—´(ç§’)
+        } else if (StrEqvSkip(lp, "Interval=")) {
+            Live.nInterval = Str2Digit(lp, 0, 60000); // ä¸Šä¼ æ–‡ä»¶é—´éš”æ—¶é—´(æ¯«ç§’)
+        } else if (StrEqvSkip(lp, "ProxyHost=")) {
+            strcpy(Live.szProxyHost, lp); // ä»£ç†ä¸»æœº.
+        } else if (StrEqvSkip(lp, "ProxyPort=")) {
+            Live.nProxyPort = Str2Digit(lp, 1, 65535); // ä»£ç†ç«¯å£.
+        } else if (StrEqvSkip(lp, "ProxyUser=")) {
+            strcpy(Live.szProxyUser, lp); // ä»£ç†ç”¨æˆ·å.
+            Live.szProxyUser[1024] = '\0';
+        } else if (StrEqvSkip(lp, "ProxyPassword=")) {
+            strcpy(Live.szProxyPassword, lp); // ä»£ç†å£ä»¤.
+            Live.szProxyPassword[1024] = '\0';
+        }
+    }
+    fclose(fpIniFile);
+    if (League.nTeamNum < 2) {
+        printf("é”™è¯¯ï¼šè‡³å°‘éœ€è¦ä¸¤ä¸ªå‚èµ›é˜Ÿï¼\n");
+        return 0;
+    }
+    printf("#======================#\n");
+    printf("$ UCCIå¼•æ“è”èµ›è¾“å‡ºæŠ¥å‘Š $\n");
+    printf("#======================#\n\n");
+    printf("èµ›äº‹ï¼šã€€ã€€%s\n", League.szEvent);
+    printf("åœ°ç‚¹ï¼šã€€ã€€%s\n", League.szSite);
+    printf("å‚èµ›é˜Ÿæ•°ï¼š%d\n", League.nTeamNum);
+    printf("å¤„ç†å™¨æ•°ï¼š%d\n", League.nRemainProcs);
+    printf("å¾ªç¯æ¬¡æ•°ï¼š%d\n", League.nRobinNum);
+    printf("åˆå§‹æ—¶é—´ï¼š%-4d åˆ†é’Ÿ\n", League.nInitTime);
+    printf("æ¯æ­¥åŠ æ—¶ï¼š%-4d ç§’\n", League.nIncrTime);
+    printf("åœæ­¢æ—¶é—´ï¼š%-4d æ¯«ç§’\n", League.nStopTime);
+    printf("æ¢ç®—æ¯”ä¾‹ï¼š%-4d æ¯«ç§’\n", League.nStandardCpuTime);
+    if (League.bPromotion) {
+        printf("è§„åˆ™ï¼šã€€ã€€å…è®¸ä»•(å£«)ç›¸(è±¡)å‡å˜æˆå…µ(å’)\n");
+    }
+    printf("æ¨¡æ‹Ÿå™¨ï¼šã€€UCCIå¼•æ“è”èµ›æ¨¡æ‹Ÿå™¨ 3.8\n\n");
+    printf("å‚èµ›å¼•æ“ï¼š\n\n");
+    printf("   ç¼©å†™ å¼•æ“åç§°");
+    PrintDup(' ', League.nNameLen - 8);
+    printf(" ELO  K  å¼•æ“ç¨‹åº");
+    PrintDup(' ', nEngineFileLen - 8);
+    printf(" é…ç½®æ–‡ä»¶\n");
+    PrintDup('=', League.nNameLen + nEngineFileLen - 16);
+    printf("================"
+           "================="
+           "============\n");
+    for (i = 0; i < League.nTeamNum; i++) {
+        lpTeam = TeamList + i;
+        printf("%2d %.3s  %s", i + 1, (const char*)&lpTeam->dwAbbr, lpTeam->szEngineName);
+        PrintDup(' ', League.nNameLen - strlen(lpTeam->szEngineName));
+        printf(" %4d %2d %s", lpTeam->nEloValue, lpTeam->nKValue, lpTeam->szEngineFile);
+        PrintDup(' ', nEngineFileLen - strlen(lpTeam->szEngineFile));
+        printf(" %s\n", lpTeam->szOptionFile);
+    }
+    PrintDup('=', League.nNameLen + nEngineFileLen - 16);
+    printf("================"
+           "================="
+           "============\n\n");
+    //     "   ç¼©å†™ å¼•æ“åç§°" " ELO  K  å¼•æ“æ–‡ä»¶" " é…ç½®æ–‡ä»¶"
 
-  // ½ÓÏÂÀ´Éú³ÉÑ­»·Èü¶ÔÕó±í£¬¿É²ÎÔÄ£ºhttp://www.xqbase.com/protocol/roundrobin.htm
-  League.nGameNum = (League.nTeamNum + 1) / 2;
-  League.nRoundNum = League.nGameNum * 2 - 1;
-  for (i = 0; i < League.nGameNum; i ++) {
-    RobinTable[0][i][0] = i;
-    RobinTable[0][i][1] = League.nGameNum * 2 - 1 - i;
-  }
-  for (i = 1; i < League.nRoundNum; i ++) {
-    RobinTable[i][0][1] = League.nGameNum * 2 - 1;
-    for (j = 0; j < League.nGameNum - 1; j ++) {
-      RobinTable[i][j][0] = RobinTable[i - 1][League.nGameNum - 1 - j][1];
-      RobinTable[i][j + 1][1] = RobinTable[i - 1][League.nGameNum - 1 - j][0];
+    // æ¥ä¸‹æ¥ç”Ÿæˆå¾ªç¯èµ›å¯¹é˜µè¡¨ï¼Œå¯å‚é˜…ï¼šhttp://www.xqbase.com/protocol/roundrobin.htm
+    League.nGameNum = (League.nTeamNum + 1) / 2;
+    League.nRoundNum = League.nGameNum * 2 - 1;
+    for (i = 0; i < League.nGameNum; i++) {
+        RobinTable[0][i][0] = i;
+        RobinTable[0][i][1] = League.nGameNum * 2 - 1 - i;
     }
-    RobinTable[i][League.nGameNum - 1][0] = RobinTable[i - 1][0][0];
-  }
-  if (League.nTeamNum % 2 == 0) {
-    for (i = 0; i < League.nRoundNum; i ++) {
-      if (i % 2 != 0) {
-        SWAP(RobinTable[i][0][0], RobinTable[i][0][1]);
-      }
+    for (i = 1; i < League.nRoundNum; i++) {
+        RobinTable[i][0][1] = League.nGameNum * 2 - 1;
+        for (j = 0; j < League.nGameNum - 1; j++) {
+            RobinTable[i][j][0] = RobinTable[i - 1][League.nGameNum - 1 - j][1];
+            RobinTable[i][j + 1][1] = RobinTable[i - 1][League.nGameNum - 1 - j][0];
+        }
+        RobinTable[i][League.nGameNum - 1][0] = RobinTable[i - 1][0][0];
     }
-  } else {
-    League.nGameNum --;
-    for (i = 0; i < League.nRoundNum; i ++) {
-      for (j = 0; j < League.nGameNum; j ++) {
-        RobinTable[i][j][0] = RobinTable[i][j + 1][0];
-        RobinTable[i][j][1] = RobinTable[i][j + 1][1];
-      }
-    }
-  }
-  for (i = 0; i < League.nRoundNum; i ++) {
-    for (j = 0; j < League.nGameNum; j ++) {
-      RobinTable[League.nRoundNum + i][j][0] = RobinTable[i][j][1];
-      RobinTable[League.nRoundNum + i][j][1] = RobinTable[i][j][0];
-    }
-  }
-  League.nRoundNum *= 2;
-  printf("Èü³Ì±í£º\n\n");
-  printf("ÂÖ´Î ¶Ô¾Ö\n");
-  printf("=====");
-  for (i = 0; i < League.nGameNum; i ++) {
-    printf("========");
-  }
-  printf("\n");
-  for (i = 0; i < League.nRobinNum; i ++) {
-    for (j = 0; j < League.nRoundNum; j ++) {
-      printf("%3d ", i * League.nRoundNum + j + 1);
-      for (k = 0; k < League.nGameNum; k ++) {
-        printf(" %.3s-%.3s", (const char *) &TeamList[(int) RobinTable[j][k][0]].dwAbbr,
-            (const char *) &TeamList[(int) RobinTable[j][k][1]].dwAbbr);
-        Live.cResult[i][j][k] = -1;
-      }
-      printf("\n");
-    }
-  }
-  printf("=====");
-  for (i = 0; i < League.nGameNum; i ++) {
-    printf("========");
-  }
-  printf("\n\n");
-
-  // ³õÊ¼»¯ECCO½âÎöº¯Êı
-  LocatePath(szLineStr, cszLibEccoFile);
-  League.EccoApi.Startup(szLineStr);
-
-  // ²âÊÔÖ±²¥Ò³Ãæ
-  WSBStartup();
-  nSocket = (Live.szProxyHost[0] == '\0' ? INVALID_SOCKET : WSBConnect(Live.szProxyHost, Live.nProxyPort));
-  if (nSocket == INVALID_SOCKET) {
-    Live.nProxyPort = 0;
-    nSocket = (Live.szHost[0] == '\0' ? INVALID_SOCKET : WSBConnect(Live.szHost, Live.nPort));
-    if (nSocket == INVALID_SOCKET) {
-      Live.nPort = 0;
+    if (League.nTeamNum % 2 == 0) {
+        for (i = 0; i < League.nRoundNum; i++) {
+            if (i % 2 != 0) {
+                SWAP(RobinTable[i][0][0], RobinTable[i][0][1]);
+            }
+        }
     } else {
-      WSBDisconnect(nSocket);
+        League.nGameNum--;
+        for (i = 0; i < League.nRoundNum; i++) {
+            for (j = 0; j < League.nGameNum; j++) {
+                RobinTable[i][j][0] = RobinTable[i][j + 1][0];
+                RobinTable[i][j][1] = RobinTable[i][j + 1][1];
+            }
+        }
     }
-  } else {
-    WSBDisconnect(nSocket);
-  }
-  Live.llTime = GetTime();
+    for (i = 0; i < League.nRoundNum; i++) {
+        for (j = 0; j < League.nGameNum; j++) {
+            RobinTable[League.nRoundNum + i][j][0] = RobinTable[i][j][1];
+            RobinTable[League.nRoundNum + i][j][1] = RobinTable[i][j][0];
+        }
+    }
+    League.nRoundNum *= 2;
+    printf("èµ›ç¨‹è¡¨ï¼š\n\n");
+    printf("è½®æ¬¡ å¯¹å±€\n");
+    printf("=====");
+    for (i = 0; i < League.nGameNum; i++) {
+        printf("========");
+    }
+    printf("\n");
+    for (i = 0; i < League.nRobinNum; i++) {
+        for (j = 0; j < League.nRoundNum; j++) {
+            printf("%3d ", i * League.nRoundNum + j + 1);
+            for (k = 0; k < League.nGameNum; k++) {
+                printf(" %.3s-%.3s", (const char*)&TeamList[(int)RobinTable[j][k][0]].dwAbbr,
+                    (const char*)&TeamList[(int)RobinTable[j][k][1]].dwAbbr);
+                Live.cResult[i][j][k] = -1;
+            }
+            printf("\n");
+        }
+    }
+    printf("=====");
+    for (i = 0; i < League.nGameNum; i++) {
+        printf("========");
+    }
+    printf("\n\n");
 
-  // ²¶»ñCtrl-CºÍCtrl-Break
-  League.bRunning = true;
-  signal(SIGINT, signal_handler);
-  signal(SIGTERM, signal_handler); 
+    // åˆå§‹åŒ–ECCOè§£æå‡½æ•°.
+    LocatePath(szLineStr, cszLibEccoFile);
+    League.EccoApi.Startup(szLineStr);
+
+    // æµ‹è¯•ç›´æ’­é¡µé¢.
+    WSBStartup();
+    nSocket = (Live.szProxyHost[0] == '\0' ? INVALID_SOCKET : WSBConnect(Live.szProxyHost, Live.nProxyPort));
+    if (nSocket == INVALID_SOCKET) {
+        Live.nProxyPort = 0;
+        nSocket = (Live.szHost[0] == '\0' ? INVALID_SOCKET : WSBConnect(Live.szHost, Live.nPort));
+        if (nSocket == INVALID_SOCKET) {
+            Live.nPort = 0;
+        } else {
+            WSBDisconnect(nSocket);
+        }
+    } else {
+        WSBDisconnect(nSocket);
+    }
+    Live.llTime = GetTime();
+
+    // æ•è·Ctrl-Cå’ŒCtrl-Break
+    League.bRunning = true;
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
 #ifdef SIGBREAK
-  signal(SIGBREAK, signal_handler);
+    signal(SIGBREAK, signal_handler);
 #endif
 
-  // ÏÖÔÚ¿ªÊ¼¿ØÖÆÆå¾Ö¶ÓÁĞ£¬ÕâÊÇ±¾Ä£ÄâÆ÷µÄºËĞÄ²¿·Ö
-  printf("=== ÁªÈü½ø³Ì¿ªÊ¼ ===\n\n");
-  fflush(stdout);
-  PreGenInit();
-  ChineseInit();
-  PreEval.bPromotion = League.bPromotion;
-  nRobinPush = nRoundPush = nGamePush = 0; // Ñ¹Èë¶ÓÁĞµÄÑ­»·¡¢ÂÖ´ÎºÍÆå¾ÖĞòºÅ
-  nRobinPop = nRoundPop = nGamePop = 0;    // µ¯³ö¶ÓÁĞµÄÑ­»·¡¢ÂÖ´ÎºÍÆå¾ÖĞòºÅ
-  nQueueBegin = nQueueEnd = 0;             // ¶ÓÁĞ³ö¿ÚºÍ¶ÓÁĞÈë¿Ú
-  while (League.bRunning && nRobinPop < League.nRobinNum) {
-    // °ÑÒ»¸öÆå¾ÖÑ¹Èë¶ÓÁĞµÄÌõ¼şÊÇ£º(1) ËùÓĞ±ÈÈüÍê³É£¬(2) ÓĞÊ£ÓàµÄ´¦ÀíÆ÷£¬(3) ¶ÓÁĞÎ´±»ÌîÂú
-    if (nRobinPush < League.nRobinNum && League.nRemainProcs > 0 && (nQueueEnd + 1) % QUEUE_LEN != nQueueBegin) {
-      GameList[nQueueEnd].BeginGame(nRobinPush, nRoundPush, nGamePush);
-      nQueueEnd = (nQueueEnd + 1) % QUEUE_LEN;
-      // ÒÑ°ÑÒ»¸öÆå¾ÖÑ¹Èë¶ÓÁĞ£¬ĞŞ¸ÄÑ­»·¡¢ÂÖ´ÎºÍÆå¾ÖĞòºÅ
-      nGamePush ++;
-      if (nGamePush == League.nGameNum) {
-        nGamePush = 0;
-        nRoundPush ++;
-        if (nRoundPush == League.nRoundNum) {
-          nRoundPush = 0;
-          nRobinPush ++;
+    // ç°åœ¨å¼€å§‹æ§åˆ¶æ£‹å±€é˜Ÿåˆ—ï¼Œè¿™æ˜¯æœ¬æ¨¡æ‹Ÿå™¨çš„æ ¸å¿ƒéƒ¨åˆ†.
+    printf("=== è”èµ›è¿›ç¨‹å¼€å§‹ ===\n\n");
+    fflush(stdout);
+    PreGenInit();
+    ChineseInit();
+    PreEval.bPromotion = League.bPromotion;
+    nRobinPush = nRoundPush = nGamePush = 0; // å‹å…¥é˜Ÿåˆ—çš„å¾ªç¯ã€è½®æ¬¡å’Œæ£‹å±€åºå·.
+    nRobinPop = nRoundPop = nGamePop = 0; // å¼¹å‡ºé˜Ÿåˆ—çš„å¾ªç¯ã€è½®æ¬¡å’Œæ£‹å±€åºå·.
+    nQueueBegin = nQueueEnd = 0; // é˜Ÿåˆ—å‡ºå£å’Œé˜Ÿåˆ—å…¥å£.
+    while (League.bRunning && nRobinPop < League.nRobinNum) {
+        // æŠŠä¸€ä¸ªæ£‹å±€å‹å…¥é˜Ÿåˆ—çš„æ¡ä»¶æ˜¯ï¼š(1) æ‰€æœ‰æ¯”èµ›å®Œæˆï¼Œ(2) æœ‰å‰©ä½™çš„å¤„ç†å™¨ï¼Œ(3) é˜Ÿåˆ—æœªè¢«å¡«æ»¡.
+        if (nRobinPush < League.nRobinNum && League.nRemainProcs > 0 && (nQueueEnd + 1) % QUEUE_LEN != nQueueBegin) {
+            GameList[nQueueEnd].BeginGame(nRobinPush, nRoundPush, nGamePush);
+            nQueueEnd = (nQueueEnd + 1) % QUEUE_LEN;
+            // å·²æŠŠä¸€ä¸ªæ£‹å±€å‹å…¥é˜Ÿåˆ—ï¼Œä¿®æ”¹å¾ªç¯ã€è½®æ¬¡å’Œæ£‹å±€åºå·.
+            nGamePush++;
+            if (nGamePush == League.nGameNum) {
+                nGamePush = 0;
+                nRoundPush++;
+                if (nRoundPush == League.nRoundNum) {
+                    nRoundPush = 0;
+                    nRobinPush++;
+                }
+            }
         }
-      }
+
+        // è°ƒåº¦é˜Ÿåˆ—ä¸­çš„æ¯ä¸ªæ£‹å±€ï¼Œç›¸å½“äºç”¨è½®è½¬æ–¹å¼ç®¡ç†å¤šä¸ªè¿›ç¨‹.
+        nQueueIndex = nQueueBegin;
+        while (nQueueIndex != nQueueEnd) {
+            GameList[nQueueIndex].ResumeGame();
+            nQueueIndex = (nQueueIndex + 1) % QUEUE_LEN;
+        }
+
+        // å¦‚æœé˜Ÿåˆ—ä¸æ˜¯ç©ºçš„ï¼Œé‚£ä¹ˆå°è¯•å°†æ£‹å±€å¼¹å‡ºé˜Ÿåˆ—.
+        if (nQueueBegin != nQueueEnd) {
+            if (GameList[nQueueBegin].EndGame(nRobinPop, nRoundPop, nGamePop)) {
+                nQueueBegin = (nQueueBegin + 1) % QUEUE_LEN;
+                // å·²æŠŠä¸€ä¸ªæ£‹å±€å¼¹å‡ºé˜Ÿåˆ—ï¼Œä¿®æ”¹å¾ªç¯ã€è½®æ¬¡å’Œæ£‹å±€åºå·.
+                nGamePop++;
+                if (nGamePop == League.nGameNum) {
+                    // å¦‚æœä¸€è½®ç»“æŸï¼Œé‚£ä¹ˆè¾“å‡ºæ’åè¡¨.
+                    printf("\n");
+                    printf("ç¬¬ %d è½®åæ’åï¼š\n\n", nRobinPop * League.nRoundNum + nRoundPop + 1);
+                    PrintRankList();
+                    fflush(stdout);
+                    nGamePop = 0;
+                    nRoundPop++;
+                    if (nRoundPop == League.nRoundNum) {
+                        nRoundPop = 0;
+                        nRobinPop++;
+                    }
+                }
+            }
+        }
+        Idle();
     }
 
-    // µ÷¶È¶ÓÁĞÖĞµÄÃ¿¸öÆå¾Ö£¬Ïàµ±ÓÚÓÃÂÖ×ª·½Ê½¹ÜÀí¶à¸ö½ø³Ì
+    // å¦‚æœé˜Ÿåˆ—ä¸æ˜¯ç©ºçš„ï¼Œé‚£ä¹ˆå°è¯•å°†æ£‹å±€ä¸­æ–­.
     nQueueIndex = nQueueBegin;
     while (nQueueIndex != nQueueEnd) {
-      GameList[nQueueIndex].ResumeGame();
-      nQueueIndex = (nQueueIndex + 1) % QUEUE_LEN;
+        GameList[nQueueIndex].TerminateGame();
+        nQueueIndex = (nQueueIndex + 1) % QUEUE_LEN;
     }
 
-    // Èç¹û¶ÓÁĞ²»ÊÇ¿ÕµÄ£¬ÄÇÃ´³¢ÊÔ½«Æå¾Öµ¯³ö¶ÓÁĞ
-    if (nQueueBegin != nQueueEnd) {
-      if (GameList[nQueueBegin].EndGame(nRobinPop, nRoundPop, nGamePop)) {
-        nQueueBegin = (nQueueBegin + 1) % QUEUE_LEN;
-        // ÒÑ°ÑÒ»¸öÆå¾Öµ¯³ö¶ÓÁĞ£¬ĞŞ¸ÄÑ­»·¡¢ÂÖ´ÎºÍÆå¾ÖĞòºÅ
-        nGamePop ++;
-        if (nGamePop == League.nGameNum) {
-          // Èç¹ûÒ»ÂÖ½áÊø£¬ÄÇÃ´Êä³öÅÅÃû±í
-          printf("\n");
-          printf("µÚ %d ÂÖºóÅÅÃû£º\n\n", nRobinPop * League.nRoundNum + nRoundPop + 1);
-          PrintRankList();
-          fflush(stdout);
-          nGamePop = 0;
-          nRoundPop ++;
-          if (nRoundPop == League.nRoundNum) {
-            nRoundPop = 0;
-            nRobinPop ++;
-          }
-        }
-      }
-    }
-    Idle();
-  }
+    printf("=== è”èµ›è¿›ç¨‹ç»“æŸ ===\n\n");
+    printf("æœ€ç»ˆæ’åï¼š\n\n");
+    PrintRankList();
 
-  // Èç¹û¶ÓÁĞ²»ÊÇ¿ÕµÄ£¬ÄÇÃ´³¢ÊÔ½«Æå¾ÖÖĞ¶Ï
-  nQueueIndex = nQueueBegin;
-  while (nQueueIndex != nQueueEnd) {
-    GameList[nQueueIndex].TerminateGame();
-    nQueueIndex = (nQueueIndex + 1) % QUEUE_LEN;
-  }
-
-  printf("=== ÁªÈü½ø³Ì½áÊø ===\n\n");
-  printf("×îÖÕÅÅÃû£º\n\n");
-  PrintRankList();
-
-  WSBCleanup();
-  League.EccoApi.Shutdown();
-  return 0;
+    WSBCleanup();
+    League.EccoApi.Shutdown();
+    return 0;
 }

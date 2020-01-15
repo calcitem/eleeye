@@ -54,7 +54,7 @@ static const int cpcXqf2Piece[32] = {
     39, 37, 35, 33, 32, 34, 36, 38, 40, 41, 42, 43, 44, 45, 46, 47
 };
 
-// ÃÜÔ¿Á÷ÑÚÂë
+// å¯†é’¥æµæ©ç .
 static const char* const cszEncStreamMask = "[(C) Copyright Mr. Dong Shiwei.]";
 
 inline int Square54Plus221(int x)
@@ -94,13 +94,13 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
     FILE* fp;
     XqfHeaderStruct xqfhd;
     XqfMoveStruct xqfmv;
-    // °æ±¾ºÅºÍ¼ÓÃÜÆ«ÒÆÖµ
+    // ç‰ˆæœ¬å·å’ŒåŠ å¯†åç§»å€¼.
     int nXqfVer, nPieceOff, nSrcOff, nDstOff, nCommentOff;
-    // ÃÜÔ¿Á÷
+    // å¯†é’¥æµ.
     int nEncStream[32];
-    // ÃÜÔ¿Á÷Ë÷ÒıºÅ
+    // å¯†é’¥æµç´¢å¼•å·.
     int nEncIndex;
-    // ¾ÖÃæ³õÊ¼Î»ÖÃ
+    // å±€é¢åˆå§‹ä½ç½®.
     int nPiecePos[32];
 
     uint32_t dwEccoIndex, dwFileMove[20];
@@ -112,7 +112,7 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
     fread(&xqfhd, sizeof(xqfhd), 1, fp);
     fseek(fp, sizeof(xqfhd), SEEK_CUR);
     if (xqfhd.szTag[0] == 'X' && xqfhd.szTag[1] == 'Q') {
-        // PGNÎÄ¼ş¿ÉÒÔ´ò¿ª£¬ÏÖÔÚÕıÊ½½âÎöXQFÎÄ¼ş
+        // PGNæ–‡ä»¶å¯ä»¥æ‰“å¼€ï¼Œç°åœ¨æ­£å¼è§£æXQFæ–‡ä»¶.
         nXqfVer = xqfhd.szTag[2];
         if (nXqfVer < 11) {
             nPieceOff = nSrcOff = nDstOff = nCommentOff = 0;
@@ -120,28 +120,28 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
                 nEncStream[i] = 0;
             }
         } else {
-            // ¾ÖÃæ³õÊ¼Î»ÖÃµÄ¼ÓÃÜÆ«ÒÆÖµ
+            // å±€é¢åˆå§‹ä½ç½®çš„åŠ å¯†åç§»å€¼.
             nPieceOff = (uint8_t)(Square54Plus221((uint8_t)xqfhd.szTag[13]) * (uint8_t)xqfhd.szTag[13]);
-            // ×Å·¨ÆğµãµÄ¼ÓÃÜÆ«ÒÆÖµ
+            // ç€æ³•èµ·ç‚¹çš„åŠ å¯†åç§»å€¼.
             nSrcOff = (uint8_t)(Square54Plus221((uint8_t)xqfhd.szTag[14]) * nPieceOff);
-            // ×Å·¨ÖÕµãµÄ¼ÓÃÜÆ«ÒÆÖµ
+            // ç€æ³•ç»ˆç‚¹çš„åŠ å¯†åç§»å€¼.
             nDstOff = (uint8_t)(Square54Plus221((uint8_t)xqfhd.szTag[15]) * nSrcOff);
-            // ×¢ÊÍµÄ¼ÓÃÜÆ«ÒÆÖµ
+            // æ³¨é‡Šçš„åŠ å¯†åç§»å€¼.
             nCommentOff = ((uint8_t)xqfhd.szTag[12] * 256 + (uint8_t)xqfhd.szTag[13]) % 32000 + 767;
-            // »ù±¾ÑÚÂë
+            // åŸºæœ¬æ©ç .
             nArg0 = xqfhd.szTag[3];
-            // ÃÜÔ¿ = Ç°¶ÎÃÜÔ¿ | (ºó¶ÎÃÜÔ¿ & »ù±¾ÑÚÂë)
+            // å¯†é’¥ = å‰æ®µå¯†é’¥ | (åæ®µå¯†é’¥ & åŸºæœ¬æ©ç )
             for (i = 0; i < 4; i++) {
                 nArgs[i] = xqfhd.szTag[8 + i] | (xqfhd.szTag[12 + i] & nArg0);
             }
-            // ÃÜÔ¿Á÷ = ÃÜÔ¿ & ÃÜÔ¿Á÷ÑÚÂë
+            // å¯†é’¥æµ = å¯†é’¥ & å¯†é’¥æµæ©ç .
             for (i = 0; i < 32; i++) {
                 nEncStream[i] = (uint8_t)(nArgs[i % 4] & cszEncStreamMask[i]);
             }
         }
         nEncIndex = 0;
 
-        // ¼ÇÂ¼ÆåÆ×ĞÅÏ¢
+        // è®°å½•æ£‹è°±ä¿¡æ¯.
         if (xqfhd.szEvent[0] == 0) {
             GetXqfString(pgn.szEvent, xqfhd.szTitle);
         } else {
@@ -154,11 +154,11 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
         pgn.nResult = cnResultTrans[(int)xqfhd.szResult[3]];
 
         if (xqfhd.szSetUp[0] < 2) {
-            // Èç¹ûÊÇ¿ª¾Ö»òÕßÈ«¾Ö£¬ÄÇÃ´Ö±½ÓÉèÖÃÆğÊ¼¾ÖÃæ
+            // å¦‚æœæ˜¯å¼€å±€æˆ–è€…å…¨å±€ï¼Œé‚£ä¹ˆç›´æ¥è®¾ç½®èµ·å§‹å±€é¢.
             pgn.posStart.FromFen(cszStartFen);
         } else {
-            // Èç¹ûÊÇÖĞ¾Ö»òÕßÅÅ¾Ö£¬ÄÇÃ´¸ù¾İ"xqfhd.szPiecePos[32]"µÄÄÚÈİ°Ú·Å¾ÖÃæ
-            // µ±°æ±¾ºÅ´ïµ½12Ê±£¬»¹Òª½øÒ»²½½âÃÜ¾ÖÃæ³õÊ¼Î»ÖÃ
+            // å¦‚æœæ˜¯ä¸­å±€æˆ–è€…æ’å±€ï¼Œé‚£ä¹ˆæ ¹æ®"xqfhd.szPiecePos[32]"çš„å†…å®¹æ‘†æ”¾å±€é¢.
+            // å½“ç‰ˆæœ¬å·è¾¾åˆ°12æ—¶ï¼Œè¿˜è¦è¿›ä¸€æ­¥è§£å¯†å±€é¢åˆå§‹ä½ç½®.
             if (nXqfVer < 12) {
                 for (i = 0; i < 32; i++) {
                     nPiecePos[i] = (uint8_t)(xqfhd.szPiecePos[i] - nPieceOff);
@@ -168,7 +168,7 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
                     nPiecePos[(nPieceOff + 1 + i) % 32] = (uint8_t)(xqfhd.szPiecePos[i] - nPieceOff);
                 }
             }
-            // °Ñ"nPiecePos[32]"µÄÊı¾İ·Åµ½"PositionStruct"ÖĞ
+            // æŠŠ"nPiecePos[32]"çš„æ•°æ®æ”¾åˆ°"PositionStruct"ä¸­.
             pgn.posStart.ClearBoard();
             for (i = 0; i < 32; i++) {
                 if (nPiecePos[i] < 90) {
@@ -181,7 +181,7 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
 
         bHasNext = true;
         while (bHasNext && pgn.nMaxMove < MAX_MOVE_LEN) {
-            // ¶ÁÈ¡×Å·¨¼ÇÂ¼
+            // è¯»å–ç€æ³•è®°å½•.
             if (nXqfVer < 11) {
                 fread(&xqfmv, sizeof(xqfmv), 1, fp);
                 fread(&nCommentLen, sizeof(int), 1, fp);
@@ -201,7 +201,7 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
                 }
             }
             if (pgn.nMaxMove > 0) {
-                // ¼ÇÂ¼×Å·¨
+                // è®°å½•ç€æ³•.
                 mv = MOVE(cucsqXqf2Square[(uint8_t)(xqfmv.ucSrc - 24 - nSrcOff)], cucsqXqf2Square[(uint8_t)(xqfmv.ucDst - 32 - nDstOff)]);
                 if (pgn.nMaxMove == 1) {
                     if ((pgn.posStart.ucpcSquares[SRC(mv)] & 32) != 0) {
@@ -227,7 +227,7 @@ int Xqf2Pgn(const char* szXqfFile, const char* szPgnFile, const EccoApiStruct& E
         }
         pgn.nMaxMove--;
 
-        // ½âÎöECCO
+        // è§£æECCO
         if (xqfhd.szSetUp[0] < 2) {
             if (pgn.nMaxMove < 20) {
                 dwFileMove[pgn.nMaxMove] = 0;

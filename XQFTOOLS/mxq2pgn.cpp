@@ -1,4 +1,4 @@
-/*
+Ôªø/*
 MXQ->PGN Convertor - a Chinese Chess Score Convertion Program
 Designed by Morning Yellow, Version: 3.14, Last Modified: Jun. 2008
 Copyright (C) 2004-2008 www.elephantbase.net
@@ -65,19 +65,19 @@ int Mxq2Pgn(const char* szMxqFile, const char* szPgnFile, const EccoApiStruct& E
     ReadRecord(fp, pgn.szEvent);
     lpEvent = pgn.szEvent;
     if (false) {
-    } else if (StrScanSkip(lpEvent, "- §-")) {
+    } else if (StrScanSkip(lpEvent, "-ËÉú-")) {
         pgn.nResult = 1;
-    } else if (StrScanSkip(lpEvent, "-–`-")) {
+    } else if (StrScanSkip(lpEvent, "-Ë°ä-")) {
         pgn.nResult = 1;
-    } else if (StrScanSkip(lpEvent, "-∫Õ-")) {
+    } else if (StrScanSkip(lpEvent, "-Âíå-")) {
         pgn.nResult = 2;
-    } else if (StrScanSkip(lpEvent, "-©M-")) {
+    } else if (StrScanSkip(lpEvent, "-„éù-")) {
         pgn.nResult = 2;
-    } else if (StrScanSkip(lpEvent, "-∏∫-")) {
+    } else if (StrScanSkip(lpEvent, "-Ë¥ü-")) {
         pgn.nResult = 3;
-    } else if (StrScanSkip(lpEvent, "-≠t-")) {
+    } else if (StrScanSkip(lpEvent, "-ÁíΩ-")) {
         pgn.nResult = 3;
-    } else if (StrScanSkip(lpEvent, "-ÿì-")) {
+    } else if (StrScanSkip(lpEvent, "-Ë≤†-")) {
         pgn.nResult = 3;
     } else {
         pgn.nResult = 0;
@@ -101,12 +101,12 @@ int Mxq2Pgn(const char* szMxqFile, const char* szPgnFile, const EccoApiStruct& E
     ReadRecord(fp, szRecord);
     while (!StrEqv(szRecord, "Ends") && pgn.nMaxMove < MAX_MOVE_LEN - 1) {
         mv = MOVE(COORD_XY(szRecord[0] - '0' + 3, 'J' - szRecord[1] + 3), COORD_XY(szRecord[3] - '0' + 3, 'J' - szRecord[4] + 3));
-        mv &= 0xffff; // ∑¿÷πTryMove ± ˝◊È‘ΩΩÁ
+        mv &= 0xffff; // Èò≤Ê≠¢TryMoveÊó∂Êï∞ÁªÑË∂äÁïå.
         pgn.nMaxMove++;
         if (pgn.nMaxMove <= 20) {
             dwFileMove[pgn.nMaxMove - 1] = Move2File(mv, pos);
         }
-        // ﬁƒÃÏø…ƒ‹‘ –Ì∞—Ω´≥‘µÙ£¨µ´ElephantEye≤ª‘ –Ì£¨À˘“‘Ã¯π˝∑«∑®◊≈∑®
+        // ÂºàÂ§©ÂèØËÉΩÂÖÅËÆ∏ÊääÂ∞ÜÂêÉÊéâÔºå‰ΩÜElephantEye‰∏çÂÖÅËÆ∏ÔºåÊâÄ‰ª•Ë∑≥ËøáÈùûÊ≥ïÁùÄÊ≥ï.
         if (TryMove(pos, nStatus, mv)) {
             pgn.wmvMoveTable[pgn.nMaxMove] = mv;
         } else {

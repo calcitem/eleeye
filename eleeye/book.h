@@ -70,7 +70,7 @@ struct BookFileStruct {
     }
 };
 
-// »ñÈ¡¿ª¾Ö¿â×Å·¨
+// è·å–å¼€å±€åº“ç€æ³•.
 int GetBookMoves(const PositionStruct& pos, const char* szBookFile, BookStruct* lpbks);
 
 #endif

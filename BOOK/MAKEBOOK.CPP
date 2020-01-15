@@ -163,7 +163,7 @@ static void SearchFile(const char* szFilePath, const WIN32_FIND_DATA& wfd)
 {
     if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
         if (strlen(szFilePath) > 4) {
-            if (strnicmp(szFilePath + strlen(szFilePath) - 4, ".PGN", 4) == 0) {
+            if (_strnicmp(szFilePath + strlen(szFilePath) - 4, ".PGN", 4) == 0) {
                 ParseFile(szFilePath);
             }
         }

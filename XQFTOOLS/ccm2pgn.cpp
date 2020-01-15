@@ -69,12 +69,12 @@ int Ccm2Pgn(const char* szCcmFile, const char* szPgnFile, const EccoApiStruct& E
         }
         mv = MOVE(COORD_XY(cCcm[3] + FILE_LEFT, cCcm[5] + RANK_TOP),
             COORD_XY(cCcm[4] + FILE_LEFT, cCcm[6] + RANK_TOP));
-        mv &= 0xffff; // ·ÀÖ¹TryMoveÊ±Êý×éÔ½½ç
+        mv &= 0xffff; // é˜²æ­¢TryMoveæ—¶æ•°ç»„è¶Šç•Œ.
         pgn.nMaxMove++;
         if (pgn.nMaxMove <= 20) {
             dwFileMove[pgn.nMaxMove - 1] = Move2File(mv, pos);
         }
-        // ÖÐÓÎ¿ÉÄÜÔÊÐí°Ñ½«³Ôµô£¬µ«ElephantEye²»ÔÊÐí£¬ËùÒÔÌø¹ý·Ç·¨×Å·¨
+        // ä¸­æ¸¸å¯èƒ½å…è®¸æŠŠå°†åƒæŽ‰ï¼Œä½†ElephantEyeä¸å…è®¸ï¼Œæ‰€ä»¥è·³è¿‡éžæ³•ç€æ³•.
         if (TryMove(pos, nStatus, mv)) {
             pgn.wmvMoveTable[pgn.nMaxMove] = mv;
         } else {

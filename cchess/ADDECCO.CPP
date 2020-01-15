@@ -58,7 +58,7 @@ static void SearchFile(const char* szFilePath, const WIN32_FIND_DATA& wfd, const
     int nPathLen;
     if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
         nPathLen = strlen(szFilePath) - 4;
-        if (nPathLen > 0 && strnicmp(szFilePath + nPathLen, ".PGN", 4) == 0) {
+        if (nPathLen > 0 && _strnicmp(szFilePath + nPathLen, ".PGN", 4) == 0) {
             AddEcco(szFilePath, EccoApi);
         }
     } else {
@@ -103,13 +103,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     LocatePath(szLibEccoFile, cszLibEccoFile);
     if (!EccoApi.Startup(szLibEccoFile)) {
-        MessageBox(NULL, "没有找到ECCO.DLL！", "ECCO开局信息整理工具", MB_ICONEXCLAMATION);
+        MessageBox(NULL, "no ECCO.DLL!", "ECCO", MB_ICONEXCLAMATION);
         return 0;
     }
     bi.hwndOwner = NULL;
     bi.pidlRoot = NULL;
     bi.pszDisplayName = NULL;
-    bi.lpszTitle = "请选择可移植棋谱(*.PGN)所在的文件夹";
+    bi.lpszTitle = "folder(*.PGN)";
     bi.ulFlags = BIF_RETURNONLYFSDIRS;
     bi.lpfn = NULL;
     bi.lParam = NULL;
@@ -119,7 +119,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         PreGenInit();
         ChineseInit();
         SearchFolder(szPath, EccoApi);
-        MessageBox(NULL, "全部棋谱已加入ECCO开局信息。", "ECCO开局信息整理工具", MB_ICONINFORMATION);
+        MessageBox(NULL, "all PGN added.", "ECCO", MB_ICONINFORMATION);
     }
     EccoApi.Shutdown();
     return 0;

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(RES ${ROOT}/RES)
 
 #MESSAGE("ROOT ${ROOT}")
 
@@ -98,4 +99,11 @@ project(xq)
 add_subdirectory(3rd)
 add_subdirectory(base)
 add_subdirectory(eleeye)
+add_subdirectory(cchess)
+add_subdirectory(LEAGUE)
+add_subdirectory(UCCI2QH)
+if (WIN32)
+add_subdirectory(BOOK)
+add_subdirectory(XQFTOOLS)
+endif()
 add_subdirectory(TEST)

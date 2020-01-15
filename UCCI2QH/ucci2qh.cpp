@@ -25,25 +25,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <stdio.h>
 #include <string.h>
 
-const int MAX_CHAR = 1024; // �����ļ�����󳤶�
-const int MAX_IRREV_POS = 33; // ������������������������ֳ��������ᳬ��32��
-const int MAX_IRREV_MOVE = 200; // ��������������ŷ������������ŷ�����������100�غ�����
-const int MAX_BAN_MOVE = 128; // ���Ľ�ֹ�ŷ���
-const int MAX_INFO = 16; // �汾��Ϣ���������
-const int MAX_OPTION = 16; // ѡ�����õ��������
-const int MAX_LEVEL = 16; // �Ѷȵ���߼�����
+const int MAX_CHAR = 1024; // 配置文件的最大长度.
+const int MAX_IRREV_POS = 33; // 不可逆局面的最大个数，整个棋局吃子数不会超过32个.
+const int MAX_IRREV_MOVE = 200; // 不可逆局面的最大着法数，不吃子着法必须限制在100回合以内.
+const int MAX_BAN_MOVE = 128; // 最多的禁止着法数.
+const int MAX_INFO = 16; // 版本信息的最大行数.
+const int MAX_OPTION = 16; // 选项设置的最大行数.
+const int MAX_LEVEL = 16; // 难度的最高级别数.
 
-/* ���³���������������˼��״̬����̨˼���Ĵ�����һ���ѵ㣺
- * (1) �����ú�̨˼��ʱ������״̬��"IDLE_NONE"������˼��״̬��"BUSY_THINK"����ʾ˼��״̬��"BUSY_HINTS"��
- * (2) ���ú�̨˼��ʱ������˼�������󣬾ͽ����̨˼��״̬(BUSY_PONDER)����"mvPonder"���ǲ²��ŷ���
- * (3) "BUSY_PONDER"״̬�£�������ָ������ŷ�û���ú�̨˼�����У����̨˼���жϣ�
- * (4) "BUSY_PONDER"״̬�£�������ָ������ŷ��ú�̨˼������(��"mvPonder"һ��)���ͽ����̨˼������״̬(BUSY_PONDERHIT)��
- * (5) "BUSY_PONDER"״̬�£������̨˼������(�ڶ��ָ����ŷ�֮ǰ)��������̨˼�����״̬(IDLE_PONDER_FINISHED)����"mvPonderFinished"�򱣴��̨˼���Ľ����
- * (6) "BUSY_PONDERHIT"״̬�£�����յ�˼��ָ���ת������˼��״̬(BUSY_THINK)��
- * (7) "BUSY_PONDERHIT"״̬�£������̨˼������(�ڶ��ָ����ŷ�֮ǰ)����ת���̨˼����ɲ�������״̬(IDLE_PONDERHIT_FINISHED)����"mvPonderFinished"�򱣴��̨˼���Ľ����
- * (8) "IDLE_PONDER_FINISHED"״̬�£�������ָ������ŷ�û���ú�̨˼�����У���������¿�ʼ˼����
- * (9) "IDLE_PONDER_FINISHED"״̬�£�������ָ������ŷ��ú�̨˼�����У���ת���̨˼����ɲ�������״̬(IDLE_PONDERHIT_FINISHED)��
- * (10) "IDLE_PONDERHIT_FINISHED"״̬�£�����յ�˼��ָ�����������"mvPonderFinished"�ŷ���
+/* 以下常量代表适配器的思考状态，后台思考的处理是一大难点:
+ * (1) 不启用后台思考时，空闲状态是"IDLE_NONE"，正常思考状态是"BUSY_THINK"，提示思考状态是"BUSY_HINTS";
+ * (2) 启用后台思考时，正常思考结束后，就进入后台思考状态(BUSY_PONDER)，而"mvPonder"则是猜测着法;
+ * (3) "BUSY_PONDER"状态下，如果对手给出的着法没有让后台思考命中，则后台思考中断;
+ * (4) "BUSY_PONDER"状态下，如果对手给出的着法让后台思考命中(和"mvPonder"一致)，就进入后台思考命中状态(BUSY_PONDERHIT);
+ * (5) "BUSY_PONDER"状态下，如果后台思考结束(在对手给出着法之前)，则进入后台思考完成状态(IDLE_PONDER_FINISHED)，而"mvPonderFinished"则保存后台思考的结果;
+ * (6) "BUSY_PONDERHIT"状态下，如果收到思考指令，就转入正常思考状态(BUSY_THINK);
+ * (7) "BUSY_PONDERHIT"状态下，如果后台思考结束(在对手给出着法之前)，就转入后台思考完成并且命中状态(IDLE_PONDERHIT_FINISHED)，而"mvPonderFinished"则保存后台思考的结果;
+ * (8) "IDLE_PONDER_FINISHED"状态下，如果对手给出的着法没有让后台思考命中，则程序重新开始思考;
+ * (9) "IDLE_PONDER_FINISHED"状态下，如果对手给出的着法让后台思考命中，就转入后台思考完成并且命中状态(IDLE_PONDERHIT_FINISHED);
+ * (10) "IDLE_PONDERHIT_FINISHED"状态下，如果收到思考指令，就立即给出"mvPonderFinished"着法;
  */
 const int IDLE_NONE = 0;
 const int IDLE_PONDER_FINISHED = 1;
@@ -55,28 +55,28 @@ const int BUSY_PONDER = 6;
 const int BUSY_PONDERHIT = 7;
 
 static struct {
-    // ������״̬ѡ��
-    bool bDebug, bUcciOkay, bBgThink; // �Ƿ����ģʽ��UCCI�����Ƿ���������̨˼���Ƿ�����
-    int nLevel, nStatus; // �����״̬
-    int mvPonder, mvPonderFinished; // ��̨˼���Ĳ²��ŷ��ͺ�̨˼����ɵ��ŷ�
-    int mvPonderFinishedPonder; // ��̨˼��������˼������ĺ�̨˼���²��ŷ�
-    // ������������Ϣ
-    int nIrrevPosNum; // ��ǰ���������ĸ���
-    PositionStruct posIrrev[MAX_IRREV_POS]; // ����������б�����������������ڲ�����
-    char szIrrevFen[MAX_IRREV_POS][128]; // ÿ�鲻����������ʼ�����FEN��
-    int nBanMoveNum; // ��ֹ�ŷ�����������Ķ��������
-    int wmvBanList[MAX_BAN_MOVE]; // ��ֹ�ŷ��б�
-    // �������������ͨ��
-    PipeStruct pipeStdin, pipeEngine; // ��׼����(ǳ������ָ��)��UCCI����ܵ�������"pipe.cpp"
-    // UCCI����������Ϣ
-    char szIniFile[MAX_CHAR]; // �����������ļ�"UCCI2QH.INI"��ȫ·��
-    int nInfoNum, nOptionNum, nLevelNum; // �汾��Ϣ������ѡ�������������Ѷȼ�����
-    char szEngineName[MAX_CHAR], szEngineFile[MAX_CHAR]; // UCCI�������ƺ�UCCI��������ļ���ȫ·��
-    char szInfoStrings[MAX_INFO][MAX_CHAR], szOptionStrings[MAX_OPTION][MAX_CHAR]; // �汾��Ϣ��ѡ������
-    char szLevelStrings[MAX_LEVEL][MAX_CHAR], szThinkModes[MAX_LEVEL][MAX_CHAR]; // �Ѷȼ���͸����Ѷȼ����µ�˼��ģʽ
+    // 适配器状态选项.
+    bool bDebug, bUcciOkay, bBgThink; // 是否调试模式，UCCI引擎是否启动，后台思考是否启用.
+    int nLevel, nStatus; // 级别和状态.
+    int mvPonder, mvPonderFinished; // 后台思考的猜测着法和后台思考完成的着法.
+    int mvPonderFinishedPonder; // 后台思考结束后，思考结果的后台思考猜测着法.
+    // 适配器局面信息.
+    int nIrrevPosNum; // 当前不可逆局面的个数.
+    PositionStruct posIrrev[MAX_IRREV_POS]; // 不可逆局面列表，组成了适配器的内部局面.
+    char szIrrevFen[MAX_IRREV_POS][128]; // 每组不可逆局面的起始局面的FEN串.
+    int nBanMoveNum; // 禁止着法个数，局面改动后就置零.
+    int wmvBanList[MAX_BAN_MOVE]; // 禁止着法列表.
+    // 适配器输入输出通道.
+    PipeStruct pipeStdin, pipeEngine; // 标准输入(浅红象棋指令)和UCCI引擎管道，参阅"pipe.cpp"
+    // UCCI引擎配置信息.
+    char szIniFile[MAX_CHAR]; // 适配器配置文件"UCCI2QH.INI"的全路径.
+    int nInfoNum, nOptionNum, nLevelNum; // 版本信息行数、选项设置行数和难度级别数.
+    char szEngineName[MAX_CHAR], szEngineFile[MAX_CHAR]; // UCCI引擎名称和UCCI引擎程序文件的全路径.
+    char szInfoStrings[MAX_INFO][MAX_CHAR], szOptionStrings[MAX_OPTION][MAX_CHAR]; // 版本信息和选项设置.
+    char szLevelStrings[MAX_LEVEL][MAX_CHAR], szThinkModes[MAX_LEVEL][MAX_CHAR]; // 难度级别和各个难度级别下的思考模式.
 } Ucci2QH;
 
-// ICCS��ʽת��Ϊ�ŷ��ṹ
+// ICCS格式转换为着法结构.
 inline int ICCS_MOVE(const char* szIccs)
 {
     int sqSrc, sqDst;
@@ -85,7 +85,7 @@ inline int ICCS_MOVE(const char* szIccs)
     return MOVE(sqSrc, sqDst);
 }
 
-// �ŷ��ṹת��ΪICCS��ʽ
+// 着法结构转换为ICCS格式.
 inline void MOVE_ICCS(char* szIccs, int mv)
 {
     szIccs[0] = (FILE_X(SRC(mv))) + 'A' - FILE_LEFT;
@@ -96,7 +96,7 @@ inline void MOVE_ICCS(char* szIccs, int mv)
     szIccs[5] = '\0';
 }
 
-// ����������״̬(�ڵ���ģʽ�£���ʾ��״̬)
+// 设置适配器状态(在调试模式下，显示该状态)
 static void SetStatus(int nArg)
 {
     Ucci2QH.nStatus = nArg;
@@ -133,7 +133,7 @@ static void SetStatus(int nArg)
     }
 }
 
-// ��ǳ�����塱���ͷ�����Ϣ(�ڵ���ģʽ����ʾ����Ϣ)
+// 向“浅红象棋”发送反馈信息(在调试模式下显示该信息)
 inline void Adapter2QH(const char* szLineStr)
 {
     printf("%s\n", szLineStr);
@@ -144,7 +144,7 @@ inline void Adapter2QH(const char* szLineStr)
     }
 }
 
-// ��UCCI���淢��ָ��(�ڵ���ģʽ����ʾ����Ϣ)
+// 向UCCI引擎发送指令(在调试模式下显示该信息)
 inline void Adapter2UCCI(const char* szLineStr)
 {
     Ucci2QH.pipeEngine.LineOutput(szLineStr);
@@ -154,7 +154,7 @@ inline void Adapter2UCCI(const char* szLineStr)
     }
 }
 
-// ���ա�ǳ�����塱��ָ��
+// 接收“浅红象棋”的指令.
 inline bool QH2Adapter(char* szLineStr)
 {
     if (Ucci2QH.pipeStdin.LineInput(szLineStr)) {
@@ -168,7 +168,7 @@ inline bool QH2Adapter(char* szLineStr)
     }
 }
 
-// ����UCCI����ķ�����Ϣ
+// 接收UCCI引擎的反馈信息.
 inline bool UCCI2Adapter(char* szLineStr)
 {
     if (Ucci2QH.pipeEngine.LineInput(szLineStr)) {
@@ -182,14 +182,14 @@ inline bool UCCI2Adapter(char* szLineStr)
     }
 }
 
-// ǳ��ģʽ�¸����ڲ�����Ĺ���
+// 浅红模式下更新内部局面的过程.
 static bool MakeMove(int mv)
 {
     if (mv == 0 || Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum].ucpcSquares[SRC(mv)] == 0) {
         return false;
     }
     if (Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum].ucpcSquares[DST(mv)] == 0) {
-        // ������ǳ����ŷ�����ô����һ�����������ִ���ŷ�
+        // 如果不是吃子着法，那么在上一个可逆局面下执行着法.
         if (Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum].nMoveNum < MAX_IRREV_MOVE) {
             Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum].MakeMove(mv);
             Ucci2QH.nBanMoveNum = 0;
@@ -198,7 +198,7 @@ static bool MakeMove(int mv)
             return false;
         }
     } else {
-        // ����ǳ����ŷ�����ô��������һ�����������
+        // 如果是吃子着法，那么重新设立一个不可逆局面.
         if (Ucci2QH.nIrrevPosNum < MAX_IRREV_POS - 1) {
             Ucci2QH.nIrrevPosNum++;
             Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum] = Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum - 1];
@@ -224,7 +224,7 @@ inline int PieceChar(int pc)
     }
 }
 
-// �Ѿ����ӡ����Ļ��
+// 把局面打印到屏幕上.
 static void PrintPosition(const PositionStruct& pos)
 {
     int i, j;
@@ -247,16 +247,16 @@ static void PrintPosition(const PositionStruct& pos)
     }
 }
 
-// ��UCCI���淢��˼��ָ��
+// 给UCCI引擎发送思考指令.
 static void RunEngine(void)
 {
     int i;
     uint32_t dwMoveStr;
     char* lp;
     char szLineStr[LINE_INPUT_MAX_CHAR];
-    // ����˼��ָ��Ҫ���������裺
+    // 发送思考指令要分三个步骤:
 
-    // 1. ���;�����Ϣ��������ʼ�Ĳ�����FEN����һϵ�к����ŷ�(��ͬ��̨˼���Ĳ²��ŷ�)��
+    // 1. 发送局面信息，包括初始的不可逆FEN串和一系列后续着法(连同后台思考的猜测着法);
     lp = szLineStr;
     lp += sprintf(lp, "position fen %s - - 0 1", Ucci2QH.szIrrevFen[Ucci2QH.nIrrevPosNum]);
     if (Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum].nMoveNum > 1) {
@@ -275,7 +275,7 @@ static void RunEngine(void)
     }
     Adapter2UCCI(szLineStr);
 
-    // 2. ���ͽ�ֹ�ŷ���Ϣ��
+    // 2. 发送禁止着法信息;
     if (Ucci2QH.nBanMoveNum > 0) {
         lp = szLineStr;
         lp += sprintf(lp, "banmoves");
@@ -286,12 +286,12 @@ static void RunEngine(void)
         Adapter2UCCI(szLineStr);
     }
 
-    // 3. ����˼��ָ�
+    // 3. 发送思考指令.
     sprintf(szLineStr, Ucci2QH.nStatus == BUSY_PONDER ? "go ponder %s" : "go %s", Ucci2QH.szThinkModes[Ucci2QH.nLevel]);
     Adapter2UCCI(szLineStr);
 }
 
-// UCCI������Ϣ�Ľ��չ���
+// UCCI反馈信息的接收过程.
 static bool ReceiveUCCI(void)
 {
     int mv;
@@ -307,14 +307,14 @@ static bool ReceiveUCCI(void)
             mv = COORD_MOVE(*(uint32_t*)lp);
             lp += sizeof(uint32_t);
             switch (Ucci2QH.nStatus) {
-            // һ���յ������ŷ����͸���"bStatus"������Ӧ�Ĵ������̣���ת�����״̬��
+            // 一旦收到反馈着法，就根据"bStatus"决定相应的处理过程，并转入空闲状态:
 
-            // 1. "BUSY_WAIT"״̬��˵������"StopEngine()"�жϵģ������κδ�����
+            // 1. "BUSY_WAIT"状态，说明是由"StopEngine()"中断的，不作任何处理;
             case BUSY_WAIT:
                 SetStatus(IDLE_NONE);
                 break;
 
-            // 2. "BUSY_THINK"״̬�������ִ������ŷ����������޺�̨˼���²��ŷ�������Ӧ������
+            // 2. "BUSY_THINK"状态，输出并执行最佳着法，并视有无后台思考猜测着法作出相应处理;
             case BUSY_THINK:
                 MOVE_ICCS(szIccs, mv);
                 Adapter2QH(szIccs);
@@ -328,7 +328,7 @@ static bool ReceiveUCCI(void)
                 }
                 break;
 
-            // 3. "BUSY_HINTS"״̬��ֻҪ�������ŷ����ɣ�
+            // 3. "BUSY_HINTS"状态，只要输出最佳着法即可;
             case BUSY_HINTS:
                 MOVE_ICCS(szIccs, mv);
                 Adapter2QH(szIccs);
@@ -336,7 +336,7 @@ static bool ReceiveUCCI(void)
                 SetStatus(IDLE_NONE);
                 break;
 
-            // 4. "BUSY_PONDER"��"BUSY_PONDERHIT"״̬��ֻҪ������ŷ���¼Ϊ��̨˼��������ɣ�
+            // 4. "BUSY_PONDER"和"BUSY_PONDERHIT"状态，只要将最佳着法记录为后台思考结果即可;
             case BUSY_PONDER:
             case BUSY_PONDERHIT:
                 Ucci2QH.mvPonderFinished = mv;
@@ -352,7 +352,7 @@ static bool ReceiveUCCI(void)
             };
         } else if (StrEqv(lp, "nobestmove")) {
 
-            // 5. �����û������ŷ��������
+            // 5. 最后考虑没有最佳着法的情况.
             switch (Ucci2QH.nStatus) {
             case BUSY_WAIT:
                 break;
@@ -379,7 +379,7 @@ static bool ReceiveUCCI(void)
     return true;
 }
 
-// ��ֹUCCI�����˼��
+// 中止UCCI引擎的思考.
 static void StopEngine(void)
 {
     int64_t llTime;
@@ -394,7 +394,7 @@ static void StopEngine(void)
     Ucci2QH.nStatus = IDLE_NONE;
 }
 
-// ǳ������ָ��Ľ��չ���
+// 浅红象棋指令的接收过程.
 static bool ReceiveQH(void)
 {
     int i, j;
@@ -409,22 +409,22 @@ static bool ReceiveQH(void)
     }
     lp = szLineStr;
     if (false) {
-        // ǳ������Э����յ���ָ����������¼��֣�
+        // 浅红象棋协议接收到的指令大致有以下几种:
 
-        // 1. "SCR"ָ��(��)��
+        // 1. "SCR"指令(略);
     } else if (StrEqv(lp, "SCR")) {
         PrintPosition(Ucci2QH.posIrrev[Ucci2QH.nIrrevPosNum]);
 
-        // 2. "LEVEL"ָ��(��)��
+        // 2. "LEVEL"指令(略);
     } else if (StrEqvSkip(lp, "LEVEL ")) {
         Ucci2QH.nLevel = Str2Digit(lp, 0, Ucci2QH.nLevelNum - 1);
         Adapter2QH("OK");
-        // ע�⣺���������ж�"LEVEL "�����ж�"LEVEL"
+        // 注意：必须首先判断"LEVEL "，再判断"LEVEL"
     } else if (StrEqv(lp, "LEVEL")) {
         sprintf(szLineStr, "%d", Ucci2QH.nLevelNum);
         Adapter2QH(szLineStr);
 
-        // 3. "FEN"ָ������ڲ����棬���������̨˼��״̬��
+        // 3. "FEN"指令，更新内部局面，并且清除后台思考状态;
     } else if (StrEqvSkip(lp, "FEN ")) {
         if (Ucci2QH.nStatus == BUSY_THINK || Ucci2QH.nStatus == BUSY_HINTS) {
             Adapter2QH("ERROR");
@@ -441,7 +441,7 @@ static bool ReceiveQH(void)
         Adapter2UCCI("setoption newgame");
         Adapter2QH("OK");
 
-        // 4. "PLAY"ָ�
+        // 4. "PLAY"指令;
     } else if (StrEqvSkip(lp, "PLAY ")) {
         if (Ucci2QH.nStatus == BUSY_THINK || Ucci2QH.nStatus == BUSY_HINTS) {
             Adapter2QH("ERROR");
@@ -452,7 +452,7 @@ static bool ReceiveQH(void)
             Adapter2QH("ERROR");
             return true;
         }
-        // �����ŷ�ִ����ϣ������Ǹ��ĺ�̨˼��״̬
+        // 至此着法执行完毕，以下是更改后台思考状态.
         switch (Ucci2QH.nStatus) {
         case IDLE_PONDER_FINISHED:
             SetStatus(mv == Ucci2QH.mvPonder ? IDLE_PONDERHIT_FINISHED : IDLE_NONE);
@@ -476,9 +476,9 @@ static bool ReceiveQH(void)
         }
         Adapter2QH("OK");
 
-        // 5. "LOAD"ָ���һ�����ŷ������������̨˼��״̬��
+        // 5. "LOAD"指令，逐一载入着法，并且清除后台思考状态;
     } else if (StrEqvSkip(lp, "LOAD ")) {
-        i = Str2Digit(lp, 0, 1998); // һ���������999���غϣ���1998���ŷ�
+        i = Str2Digit(lp, 0, 1998); // 一局棋最多有999个回合，即1998个着法.
         if (Ucci2QH.nStatus == BUSY_THINK || Ucci2QH.nStatus == BUSY_HINTS) {
             for (j = 0; j < i; j++) {
                 while (!QH2Adapter(szLineStr)) {
@@ -502,7 +502,7 @@ static bool ReceiveQH(void)
         }
         Adapter2QH("OK");
 
-        // 6. "AI"ָ�����˼��״̬��
+        // 6. "AI"指令，进入思考状态;
     } else if (StrEqv(lp, "AI")) {
         if (Ucci2QH.nStatus == BUSY_THINK || Ucci2QH.nStatus == BUSY_HINTS) {
             Adapter2QH("ERROR");
@@ -538,12 +538,12 @@ static bool ReceiveQH(void)
             break;
         }
 
-        // 7. "ABORT"ָ��(��)��
+        // 7. "ABORT"指令(略);
     } else if (StrEqv(lp, "ABORT")) {
         StopEngine();
         Adapter2QH("ABORTED");
 
-        // 8. "QUIT"ָ��(��)��
+        // 8. "QUIT"指令(略);
     } else if (StrEqv(lp, "QUIT")) {
         if (Ucci2QH.nStatus > BUSY_WAIT) {
             StopEngine();
@@ -557,7 +557,7 @@ static bool ReceiveQH(void)
         }
         Ucci2QH.bUcciOkay = false;
 
-        // 9. "UNDO"ָ������ŷ������������̨˼��״̬��
+        // 9. "UNDO"指令，撤消着法，并且清除后台思考状态;
     } else if (StrEqv(lp, "UNDO")) {
         if (Ucci2QH.nStatus == BUSY_THINK || Ucci2QH.nStatus == BUSY_HINTS) {
             Adapter2QH("ERROR");
@@ -579,24 +579,24 @@ static bool ReceiveQH(void)
         }
         Adapter2QH("OK");
 
-        // 10. "HINTS"ָ�������ʾ��
+        // 10. "HINTS"指令，给出提示;
     } else if (StrEqv(lp, "HINTS")) {
         if (Ucci2QH.nStatus == BUSY_THINK || Ucci2QH.nStatus == BUSY_HINTS) {
             Adapter2QH("ERROR");
             return true;
         }
         if (Ucci2QH.nStatus == BUSY_PONDER || Ucci2QH.nStatus == BUSY_PONDERHIT) {
-            // ������ں�̨˼�����������̨˼���Ĳ²��ŷ�����Ϊ��ʾ�ŷ�
+            // 如果正在后台思考，则输出后台思考的猜测着法，作为提示着法.
             MOVE_ICCS(szIccs, Ucci2QH.mvPonder);
             Adapter2QH(szIccs);
             Adapter2QH("ENDHINTS");
         } else {
-            // ���������������˼��һ����ʾ�ŷ�
+            // 其他情况，让引擎思考一个提示着法.
             SetStatus(BUSY_HINTS);
             RunEngine();
         }
 
-        // 11. "BAN"ָ������ֹ�ŷ���"Ucci2QH.wmvBanList"�Ϳ����ˣ�
+        // 11. "BAN"指令，读入禁止着法到"Ucci2QH.wmvBanList"就可以了;
     } else if (StrEqvSkip(lp, "BAN ")) {
         Ucci2QH.nBanMoveNum = Str2Digit(lp, 0, MAX_BAN_MOVE);
         for (i = 0; i < Ucci2QH.nBanMoveNum; i++) {
@@ -612,7 +612,7 @@ static bool ReceiveQH(void)
         }
         Adapter2QH("OK");
 
-        // 12. "BGTHINK"ָ��(��)��
+        // 12. "BGTHINK"指令(略)
     } else if (StrEqv(lp, "BGTHINK ON")) {
         Ucci2QH.bBgThink = true;
         Adapter2QH("OK");
@@ -620,14 +620,14 @@ static bool ReceiveQH(void)
         Ucci2QH.bBgThink = false;
         Adapter2QH("OK");
 
-        // 13. "TIMEOUT"ָ��(��)��
+        // 13. "TIMEOUT"指令(略)
     } else if (StrEqv(lp, "TIMEOUT")) {
         Adapter2UCCI("stop");
     }
     return true;
 }
 
-// ������
+// 主函数.
 int main(int argc, char** argv)
 {
     int64_t llTime;
@@ -682,9 +682,9 @@ int main(int argc, char** argv)
     }
 
     if (false) {
-        // ǳ���������������������ʽ��
+        // 浅红引擎有以下两种命令格式:
 
-        // 1. �������棺UCCI2QH -plugin [debug]
+        // 1. 启动引擎：UCCI2QH -plugin [debug]
     } else if (StrEqv(argv[1], "-plugin")) {
         Ucci2QH.bDebug = Ucci2QH.bUcciOkay = Ucci2QH.bBgThink = false;
         Ucci2QH.nLevel = 0;
@@ -702,7 +702,7 @@ int main(int argc, char** argv)
         strcpy(Ucci2QH.szIrrevFen[0], cszStartFen);
         Ucci2QH.posIrrev[0].FromFen(Ucci2QH.szIrrevFen[0]);
         llTime = GetTime();
-        // �ȴ�10���ӣ���������޷�������������ֱ���˳���
+        // 等待10秒钟，如果引擎无法正常启动，就直接退出.
         while (!Ucci2QH.bUcciOkay && (int)(GetTime() - llTime) < 10000) {
             if (!ReceiveUCCI()) {
                 Idle();
@@ -722,7 +722,7 @@ int main(int argc, char** argv)
         Ucci2QH.pipeEngine.Close();
         Adapter2QH("BYE");
 
-        // 2. ��ʾ������Ϣ��UCCI2QH -info
+        // 2. 显示引擎信息：UCCI2QH -info
     } else if (StrEqv(argv[1], "-info")) {
         printf("QHPLUGIN V1.3\n");
         printf("%s\n", Ucci2QH.szEngineName);

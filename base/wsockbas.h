@@ -4,6 +4,8 @@
 
 #include <windows.h>
 
+#pragma comment(lib, "WSOCK32.lib")
+
 VOID WINAPI WSBStartup(VOID);
 VOID WINAPI WSBCleanup(VOID);
 LONG WINAPI WSBOpenServer(LONG nPort);

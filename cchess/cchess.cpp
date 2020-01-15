@@ -298,33 +298,33 @@ static const uint16_t cwPos2WordSimp[10] = {
 
 static const uint16_t cwDigit2WordTrad[2][10] = {
     {
-        0x40a4 /*�@[一]*/, 0x47a4 /*�G[二]*/, 0x54a4 /*�T[三]*/, 0x7ca5 /*�|[四]*/, 0xada4 /*き[五]*/,
-        0xbba4 /*せ[六]*/, 0x43a4 /*�C[七]*/, 0x4ba4 /*�K[八]*/, 0x45a4 /*�E[九]*/, 0x40a1 /*�@*/
+        0x40a4 /*[一]*/, 0x47a4 /*[二]*/, 0x54a4 /*[三]*/, 0x7ca5 /*[四]*/, 0xada4 /*[五]*/,
+        0xbba4 /*[六]*/, 0x43a4 /*[七]*/, 0x4ba4 /*[八]*/, 0x45a4 /*[九]*/, 0x40a1 /*[　]*/
     },
     {
-        0xb0a2 /*�癧１]*/, 0xb1a2 /*⒈[２]*/, 0xb2a2 /*⒉[３]*/, 0xb3a2 /*⒊[４]*/, 0xb4a2 /*⒋[５]*/,
-        0xb5a2 /*⒌[６]*/, 0xb6a2 /*⒍[７]*/, 0xb7a2 /*⒎[８]*/, 0xb8a2 /*⒏[９]*/, 0x40a1 /*�@*/
+        0xb0a2 /*[１]*/, 0xb1a2 /*[２]*/, 0xb2a2 /*[３]*/, 0xb3a2 /*[４]*/, 0xb4a2 /*[５]*/,
+        0xb5a2 /*[６]*/, 0xb6a2 /*[７]*/, 0xb7a2 /*[８]*/, 0xb8a2 /*[９]*/, 0x40a1 /*[　]*/
     }
 };
 
 static const uint16_t cwPiece2WordTrad[2][8] = {
     {
-        0xd3ab /*�覽帥]*/, 0x4ba5 /*�K[仕]*/, 0xdbac /*�踇相]*/, 0xa8b0 /*皑[馬]*/,
-        0xaea8 /*ó[車]*/, 0xb6ac /*�禰炮]*/, 0x4ca7 /*�L[兵]*/, 0x40a1 /*�@*/
+        0xd3ab /*[帥]*/, 0x4ba5 /*[仕]*/, 0xdbac /*[相]*/, 0xa8b0 /*[馬]*/,
+        0xaea8 /*[車]*/, 0xb6ac /*[炮]*/, 0x4ca7 /*[兵]*/, 0x40a1 /*[　]*/
     },
     {
-        0x4eb1 /*盢[將]*/, 0x68a4 /*�h[士]*/, 0x48b6 /*禜[象]*/, 0xa8b0 /*皑[馬]*/,
-        0xaea8 /*ó[車]*/, 0xb6ac /*�禰炮]*/, 0xf2a8 /*�騕卒]*/, 0x40a1 /*�@*/
+        0x4eb1 /*[將]*/, 0x68a4 /*[士]*/, 0x48b6 /*[象]*/, 0xa8b0 /*[馬]*/,
+        0xaea8 /*[車]*/, 0xb6ac /*[炮]*/, 0xf2a8 /*[卒]*/, 0x40a1 /*[　]*/
     }
 };
 
 static const uint16_t cwDirect2WordTrad[4] = {
-    0x69b6 /*秈[進]*/, 0xada5 /*キ[平]*/, 0x68b0 /*癶[退]*/, 0x40a1 /*�@*/
+    0x69b6 /*[進]*/, 0xada5 /*[平]*/, 0x68b0 /*[退]*/, 0x40a1 /*[　]*/
 };
 
 static const uint16_t cwPos2WordTrad[10] = {
-    0x40a4 /*�@[一]*/, 0x47a4 /*�G[二]*/, 0x54a4 /*�T[三]*/, 0x7ca5 /*�|[四]*/, 0xada4 /*き[五]*/,
-    0x65ab /*玡[前]*/, 0xa4a4 /*い[中]*/, 0xe1ab /*�醄後]*/, 0x40a1 /*�@*/, 0x40a1 /*�@*/
+    0x40a4 /*[一]*/, 0x47a4 /*[二]*/, 0x54a4 /*[三]*/, 0x7ca5 /*[四]*/, 0xada4 /*[五]*/,
+    0x65ab /*[前]*/, 0xa4a4 /*[中]*/, 0xe1ab /*[後]*/, 0x40a1 /*[　]*/, 0x40a1 /*[　]*/
 };
 
 // 固定纵线表示的纵线数组.
@@ -534,11 +534,11 @@ static int Word2Piece(int nArg)
     if (false) {
     } else if (nArg == 0x9b8e /*帥.*/ || nArg == 0xa28c /*將.*/) {
         return 0;
-    } else if (nArg == 0x52f1 /*馬.*/ || nArg == 0xd882 /*傌.*/ || nArg == 0x58d8 /*豖[傌]*/) {
+    } else if (nArg == 0x52f1 /*馬.*/ || nArg == 0xd882 /*傌.*/ || nArg == 0x58d8 /*[傌]*/) {
         return 3;
-    } else if (nArg == 0x87dc /*車.*/ || nArg == 0x8cb3 /*硨.*/ || nArg == 0xcfda /*谙[硨]*/ || nArg == 0x6582 /*俥.*/) {
+    } else if (nArg == 0x87dc /*車.*/ || nArg == 0x8cb3 /*硨.*/ || nArg == 0xcfda /*[硨]*/ || nArg == 0x6582 /*俥.*/) {
         return 4;
-    } else if (nArg == 0xfcb0 /*包.*/ || nArg == 0x5da5 /*�][包]*/ || nArg == 0x68b3 /*砲.*/ || nArg == 0xa5af /*��[砲]*/) {
+    } else if (nArg == 0xfcb0 /*包.*/ || nArg == 0x5da5 /*[包]*/ || nArg == 0x68b3 /*砲.*/ || nArg == 0xa5af /*[砲]*/) {
         return 5;
     } else {
         for (i = 0; i < MAX_PIECE; i++) {
@@ -568,7 +568,7 @@ static int Word2Direct(int nArg)
 static int Word2Pos(int nArg)
 {
     int i;
-    if (nArg == 0xe1e1 /*後.*/ || nArg == 0x5aa6 /*�Z[后]*/) {
+    if (nArg == 0xe1e1 /*後.*/ || nArg == 0x5aa6 /*[后]*/) {
         return 2 + DIRECT_TO_POS;
     } else {
         for (i = 0; i < MAX_POS; i++) {

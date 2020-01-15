@@ -25,8 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <stdio.h>
 #include <string.h>
 
-const int MAX_CHAR = 1024; // ÅäÖÃÎÄ¼şµÄ×î´ó³¤¶È
-const int MAX_INIT = 16; // InitÅäÖÃÏî×î´óĞĞÊı
+const int MAX_CHAR = 1024; // é…ç½®æ–‡ä»¶çš„æœ€å¤§é•¿åº¦.
+const int MAX_INIT = 16; // Inité…ç½®é¡¹æœ€å¤§è¡Œæ•°.
 
 inline void GetMoveNodes(int& mvTest, int& nNodes, PipeStruct& pipe)
 {
@@ -64,7 +64,7 @@ int main(void)
     PositionStruct pos;
     int64_t llTime;
 
-    // ¶ÁÈ¡ÅäÖÃÎÄ¼ş
+    // è¯»å–é…ç½®æ–‡ä»¶.
     nInitNum = nTimeout = 0;
     bNodes = bReset = false;
     szPosFile[0] = szEngineFile[0] = szCommand[0] = szOutput[0] = '\0';
@@ -106,7 +106,7 @@ int main(void)
     fclose(fpIniFile);
     nTimeout *= 1000;
 
-    // ³õÊ¼»¯ÒıÇæ
+    // åˆå§‹åŒ–å¼•æ“.
     pipe.Open(szEngineFile);
     pipe.LineOutput("ucci");
     llTime = GetTime();
@@ -129,14 +129,14 @@ int main(void)
         pipe.LineOutput(szInit[i]);
     }
 
-    // ¶ÁÈ¡²âÊÔ¾ÖÃæÎÄ¼ş
+    // è¯»å–æµ‹è¯•å±€é¢æ–‡ä»¶.
     fpPosFile = fopen(szPosFile, "rt");
     if (fpPosFile == NULL) {
         printf("%s: File Opening Error!\n", szPosFile);
         return 0;
     }
 
-    // ´ò¿ªÊä³öÎÄ¼ş
+    // æ‰“å¼€è¾“å‡ºæ–‡ä»¶.
     fpOutput = stdout;
     if (szOutput[0] != '\0') {
         fpOutput = fopen(szOutput, "wt");
@@ -161,11 +161,11 @@ int main(void)
             continue;
         }
         i++;
-        // ¶ÁÈ¡¾ÖÃæ
+        // è¯»å–å±€é¢.
         dwMoveBase = *(uint32_t*)szLineStr;
         mvBase = COORD_MOVE(dwMoveBase);
         pos.FromFen(szLineStr + 5);
-        // ÏòÒıÇæ·¢ËÍÖ¸Áî
+        // å‘å¼•æ“å‘é€æŒ‡ä»¤.
         if (bReset) {
             pipe.LineOutput("setoption newgame");
         }
@@ -173,13 +173,13 @@ int main(void)
         sprintf(szLineStr, "position fen %s - - 0 1", szFen);
         pipe.LineOutput(szLineStr);
         pipe.LineOutput(szCommand);
-        // µÈ´ıÒıÇæ·µ»Ø½á¹û
+        // ç­‰å¾…å¼•æ“è¿”å›ç»“æœ.
         mvTest = 0;
         llTime = GetTime();
         while (mvTest == 0 && (nTimeout == 0 || (int)(GetTime() - llTime) < nTimeout)) {
             GetMoveNodes(mvTest, nNodes, pipe);
         }
-        // Èç¹û³¬Ê±ÈÔÈ»Ã»ÓĞ½á¹û£¬ÔòÇ¿ĞĞÈÃÒıÇæ¸ø³ö×Å·¨
+        // å¦‚æœè¶…æ—¶ä»ç„¶æ²¡æœ‰ç»“æœï¼Œåˆ™å¼ºè¡Œè®©å¼•æ“ç»™å‡ºç€æ³•.
         if (mvTest == 0) {
             pipe.LineOutput("stop");
             llTime = GetTime();
@@ -187,7 +187,7 @@ int main(void)
                 GetMoveNodes(mvTest, nNodes, pipe);
             }
         }
-        // Í³¼Æ½á¹û
+        // ç»Ÿè®¡ç»“æœ.
         nNodesTotal += nNodes;
         if (mvTest == 0) {
             if (bNodes) {
@@ -215,13 +215,13 @@ int main(void)
         fprintf(fpOutput, " Total    %6d Hits\n", nHitNum);
     }
     fflush(fpOutput);
-    // ¹Ø±ÕÊä³öÎÄ¼ş
+    // å…³é—­è¾“å‡ºæ–‡ä»¶.
     if (fpOutput != stdout) {
         fclose(fpOutput);
     }
     fclose(fpPosFile);
 
-    // ¹Ø±ÕÒıÇæ
+    // å…³é—­å¼•æ“.
     pipe.LineOutput("quit");
     while (bUcciOkay && (int)(GetTime() - llTime) < 10000) {
         if (pipe.LineInput(szLineStr)) {
