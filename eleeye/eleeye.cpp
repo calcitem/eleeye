@@ -138,7 +138,7 @@ int main(void)
                     UcciComm.nSpin /= 2;
                     i++;
                 }
-                NewHash(MAX(i, 24)); // 最小的置换表设为16M
+                NewHash(std::max(i, 24)); // 最小的置换表设为16M
                 break;
             case UCCI_OPTION_IDLE:
                 switch (UcciComm.Grade) {
@@ -217,7 +217,7 @@ int main(void)
                     // 对于时段制，把剩余时间平均分配到每一步，作为适当时限.
                     // 剩余步数从1到5，最大时限依次是剩余时间的100%、90%、80%、70%和60%，5以上都是50%
                     Search.nProperTimer = UcciComm.nTime / UcciComm.nMovesToGo;
-                    Search.nMaxTimer = UcciComm.nTime * MAX(5, 11 - UcciComm.nMovesToGo) / 10;
+                    Search.nMaxTimer = UcciComm.nTime * std::max(5, 11 - UcciComm.nMovesToGo) / 10;
                 } else {
                     // 对于加时制，假设棋局会在20回合内结束，算出平均每一步的适当时限，最大时限是剩余时间的一半.
                     Search.nProperTimer = UcciComm.nTime / 20 + UcciComm.nIncrement;
@@ -225,7 +225,7 @@ int main(void)
                 }
                 // 如果是后台思考的时间分配策略，那么适当时限设为原来的1.25倍.
                 Search.nProperTimer += (bPonderTime ? Search.nProperTimer / 4 : 0);
-                Search.nMaxTimer = MIN(Search.nMaxTimer, Search.nProperTimer * 10);
+                Search.nMaxTimer = std::min(Search.nMaxTimer, Search.nProperTimer * 10);
                 SearchMain(UCCI_MAX_DEPTH);
                 break;
             default:

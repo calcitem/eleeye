@@ -259,7 +259,7 @@ static void HttpUpload(const char* szFileName)
     BlockSend(nSocket, cszContent1, nContentLen1, 10000);
     fseek(fpUpload, 0, SEEK_SET);
     while (nFileLen > 0) {
-        nPostLen = MIN(nFileLen, MAX_CHAR * 4);
+        nPostLen = std::min(nFileLen, MAX_CHAR * 4);
         fread(szPost, nPostLen, 1, fpUpload);
         BlockSend(nSocket, szPost, nPostLen, 10000);
         nFileLen -= nPostLen;
@@ -370,7 +370,7 @@ static void PublishLeague(void)
     for (i = 0; i < League.nTeamNum - 1; i++) {
         for (j = League.nTeamNum - 1; j > i; j--) {
             if (TeamList[nSortList[j - 1]].nScore < TeamList[nSortList[j]].nScore) {
-                SWAP(nSortList[j - 1], nSortList[j]);
+                std::swap(nSortList[j - 1], nSortList[j]);
             }
         }
     }
@@ -1230,7 +1230,7 @@ static void PrintRankList(void)
     for (i = 0; i < League.nTeamNum - 1; i++) {
         for (j = League.nTeamNum - 1; j > i; j--) {
             if (TeamList[nSortList[j - 1]].nScore < TeamList[nSortList[j]].nScore) {
-                SWAP(nSortList[j - 1], nSortList[j]);
+                std::swap(nSortList[j - 1], nSortList[j]);
             }
         }
     }
@@ -1339,13 +1339,13 @@ int main(void)
                 lpTeam->dwAbbr = *(uint32_t*)lp;
                 StrSplitSkip(lp, ',');
                 StrSplitSkip(lp, ',', lpTeam->szEngineName);
-                League.nNameLen = MAX(League.nNameLen, (int)strlen(lpTeam->szEngineName));
+                League.nNameLen = std::max(League.nNameLen, (int)strlen(lpTeam->szEngineName));
                 lpTeam->nEloValue = Str2Digit(lp, 0, 9999);
                 StrSplitSkip(lp, ',');
                 lpTeam->nKValue = Str2Digit(lp, 0, 99);
                 StrSplitSkip(lp, ',');
                 StrSplitSkip(lp, ',', lpTeam->szEngineFile);
-                nEngineFileLen = MAX(nEngineFileLen, (int)strlen(lpTeam->szEngineFile));
+                nEngineFileLen = std::max(nEngineFileLen, (int)strlen(lpTeam->szEngineFile));
                 StrSplitSkip(lp, ',', lpTeam->szOptionFile);
                 StrSplitSkip(lp, ',', lpTeam->szUrl);
                 StrSplitSkip(lp, ',', lpTeam->szGoParam);
@@ -1447,7 +1447,7 @@ int main(void)
     if (League.nTeamNum % 2 == 0) {
         for (i = 0; i < League.nRoundNum; i++) {
             if (i % 2 != 0) {
-                SWAP(RobinTable[i][0][0], RobinTable[i][0][1]);
+                std::swap(RobinTable[i][0][0], RobinTable[i][0][1]);
             }
         }
     } else {

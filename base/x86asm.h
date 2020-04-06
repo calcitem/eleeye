@@ -36,7 +36,6 @@ inline int Bsf(uint32_t Operand)
     return __builtin_ctz(Operand);
 #else
 #error "Not implemented"
-    assert(false);
 #endif
 }
 
@@ -55,11 +54,30 @@ inline int Bsr(uint32_t Operand)
     return 31 - __builtin_clz(Operand);
 #else
 #error "Not implemented"
-    assert(false);
 #endif
 }
 
 inline uint64_t TimeStampCounter()
 {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+#ifdef _MSC_VER
+    return __rdtsc();
+#else
+#if defined(__amd64__) || defined(__x86_64__)
+    uint64_t rax, rdx;
+    __asm__ __volatile__("rdtsc"
+                         : "=a"(rax), "=d"(rdx)
+                         :
+                         :);
+    return (rdx << 32) | rax;
+#elif defined(__i386__) || defined(__i386) || defined(__X86__)
+    uint64_t rax;
+    __asm__ __volatile__("rdtsc"
+                         : "=A"(rax)
+                         :
+                         :);
+    return rax;
+#else
+#error "Not implemented"
+#endif
+#endif
 }

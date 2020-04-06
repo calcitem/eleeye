@@ -352,14 +352,14 @@ void PositionStruct::PreEvaluate(void)
         bInit = true;
         // 初始化"PreEvalEx.cPopCnt16"数组，只需要初始化一次.
         for (i = 0; i < 65536; i++) {
-            PreEvalEx.cPopCnt16[i] = PopCnt16(i);
+            PreEvalEx.cPopCnt16[i] = PopCnt(i);
         }
     }
 
     // 首先判断局势处于开中局还是残局阶段，方法是计算各种棋子的数量，按照车=6、马炮=3、其它=1相加.
-    nMidgameValue = PopCnt32(this->dwBitPiece & BOTH_BITPIECE(ADVISOR_BITPIECE | BISHOP_BITPIECE | PAWN_BITPIECE)) * OTHER_MIDGAME_VALUE;
-    nMidgameValue += PopCnt32(this->dwBitPiece & BOTH_BITPIECE(KNIGHT_BITPIECE | CANNON_BITPIECE)) * KNIGHT_CANNON_MIDGAME_VALUE;
-    nMidgameValue += PopCnt32(this->dwBitPiece & BOTH_BITPIECE(ROOK_BITPIECE)) * ROOK_MIDGAME_VALUE;
+    nMidgameValue = PopCnt(this->dwBitPiece & BOTH_BITPIECE(ADVISOR_BITPIECE | BISHOP_BITPIECE | PAWN_BITPIECE)) * OTHER_MIDGAME_VALUE;
+    nMidgameValue += PopCnt(this->dwBitPiece & BOTH_BITPIECE(KNIGHT_BITPIECE | CANNON_BITPIECE)) * KNIGHT_CANNON_MIDGAME_VALUE;
+    nMidgameValue += PopCnt(this->dwBitPiece & BOTH_BITPIECE(ROOK_BITPIECE)) * ROOK_MIDGAME_VALUE;
     // 使用二次函数，子力很少时才认为接近残局.
     nMidgameValue = (2 * TOTAL_MIDGAME_VALUE - nMidgameValue) * nMidgameValue / TOTAL_MIDGAME_VALUE;
     __ASSERT_BOUND(0, nMidgameValue, TOTAL_MIDGAME_VALUE);
@@ -404,15 +404,15 @@ void PositionStruct::PreEvaluate(void)
         }
     }
     // 如果本方轻子数比对方多，那么每多一个轻子(车算2个轻子)威胁值加2。威胁值最多不超过8
-    nWhiteSimpleValue = PopCnt16(this->wBitPiece[0] & ROOK_BITPIECE) * 2 + PopCnt16(this->wBitPiece[0] & (KNIGHT_BITPIECE | CANNON_BITPIECE));
-    nBlackSimpleValue = PopCnt16(this->wBitPiece[1] & ROOK_BITPIECE) * 2 + PopCnt16(this->wBitPiece[1] & (KNIGHT_BITPIECE | CANNON_BITPIECE));
+    nWhiteSimpleValue = PopCnt(this->wBitPiece[0] & ROOK_BITPIECE) * 2 + PopCnt(this->wBitPiece[0] & (KNIGHT_BITPIECE | CANNON_BITPIECE));
+    nBlackSimpleValue = PopCnt(this->wBitPiece[1] & ROOK_BITPIECE) * 2 + PopCnt(this->wBitPiece[1] & (KNIGHT_BITPIECE | CANNON_BITPIECE));
     if (nWhiteSimpleValue > nBlackSimpleValue) {
         nWhiteAttacks += (nWhiteSimpleValue - nBlackSimpleValue) * 2;
     } else {
         nBlackAttacks += (nBlackSimpleValue - nWhiteSimpleValue) * 2;
     }
-    nWhiteAttacks = MIN(nWhiteAttacks, TOTAL_ATTACK_VALUE);
-    nBlackAttacks = MIN(nBlackAttacks, TOTAL_ATTACK_VALUE);
+    nWhiteAttacks = std::min(nWhiteAttacks, TOTAL_ATTACK_VALUE);
+    nBlackAttacks = std::min(nBlackAttacks, TOTAL_ATTACK_VALUE);
     PreEvalEx.vlBlackAdvisorLeakage = TOTAL_ADVISOR_LEAKAGE * nWhiteAttacks / TOTAL_ATTACK_VALUE;
     PreEvalEx.vlWhiteAdvisorLeakage = TOTAL_ADVISOR_LEAKAGE * nBlackAttacks / TOTAL_ATTACK_VALUE;
     __ASSERT_BOUND(0, nWhiteAttacks, TOTAL_ATTACK_VALUE);

@@ -39,7 +39,7 @@ Fraction::Fraction(double df, int nPrecision) {
   nTempNum = nSequence[nPrecision];
   nTempDen = 1;
   for (i = nPrecision - 1; i >= 0; i --) {
-    SWAP(nTempNum, nTempDen);
+    std::swap(nTempNum, nTempDen);
     nTempNum += nTempDen * nSequence[i];
   }
   if (nTempDen < 0) {

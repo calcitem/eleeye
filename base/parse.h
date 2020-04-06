@@ -134,7 +134,7 @@ inline int Str2Digit(const char* sz, int nMin, int nMax)
 {
     int nRet;
     if (sscanf(sz, "%d", &nRet) > 0) {
-        return MIN(MAX(nRet, nMin), nMax);
+        return std::min(std::max(nRet, nMin), nMax);
     } else {
         return nMin;
     }

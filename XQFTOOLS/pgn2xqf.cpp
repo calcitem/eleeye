@@ -60,7 +60,7 @@ static const int cnResultTrans[4] = {
 inline void SetXqfString(char* sz, const char* szValue, int nMaxLen)
 {
     int nLen;
-    nLen = MIN((int)strlen(szValue), nMaxLen - 1);
+    nLen = std::min((int)strlen(szValue), nMaxLen - 1);
     sz[0] = nLen;
     strncpy(sz + 1, szValue, nLen);
 }

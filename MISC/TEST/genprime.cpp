@@ -29,7 +29,7 @@ int main(void) {
   }
   j = 0;
   for (i = 0; i < TABLE_LEN / 4; i ++) {
-    j += PopCnt32(((uint32_t *) ucPrimeTable)[i]);
+    j += PopCnt(((uint32_t *) ucPrimeTable)[i]);
   }
   printf("Numbers below %d are sifted, using %dms.\n", (int) MAX_DIVISOR, (int) (GetTime() - llTime));
   printf("There are %d prime numbers below %d^2.\n", (int) j, (int) MAX_DIVISOR);

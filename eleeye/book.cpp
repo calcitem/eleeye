@@ -99,7 +99,7 @@ int GetBookMoves(const PositionStruct& pos, const char* szBookFile, BookStruct* 
     for (i = 0; i < nMoves - 1; i++) {
         for (j = nMoves - 1; j > i; j--) {
             if (lpbks[j - 1].wvl < lpbks[j].wvl) {
-                SWAP(lpbks[j - 1], lpbks[j]);
+                std::swap(lpbks[j - 1], lpbks[j]);
             }
         }
     }

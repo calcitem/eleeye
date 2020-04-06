@@ -218,7 +218,7 @@ static void SortMem(int low, int high)
             highMid--;
         }
         if (lowMid <= highMid) {
-            SWAP(MakeBook2.TempBuffer[lowMid], MakeBook2.TempBuffer[highMid]);
+            std::swap(MakeBook2.TempBuffer[lowMid], MakeBook2.TempBuffer[highMid]);
             lowMid++;
             highMid--;
         }

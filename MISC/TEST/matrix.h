@@ -127,7 +127,7 @@ struct Matrix {
     int i;
     if (nDstRow != nSrcRow) {
       for (i = nStart; i < nCol; i ++) {
-        SWAP((*this)[nDstRow][i], (*this)[nSrcRow][i]);
+        std::swap((*this)[nDstRow][i], (*this)[nSrcRow][i]);
       }
     }
   }
@@ -171,7 +171,7 @@ struct Matrix {
     int i;
     if (nDstCol != nSrcCol) {
       for (i = nStart; i < nRow; i ++) {
-        SWAP((*this)[i][nDstCol], (*this)[i][nSrcCol]);
+        std::swap((*this)[i][nDstCol], (*this)[i][nSrcCol]);
       }
     }
   }

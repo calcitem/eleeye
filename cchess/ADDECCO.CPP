@@ -36,7 +36,7 @@ static void AddEcco(const char* szPgnFile, const EccoApiStruct& EccoApi)
 
     if (pgn.Read(szPgnFile, NO_ADVERT)) {
         pos.FromFen(cszStartFen);
-        for (i = 1; i <= MIN(pgn.nMaxMove, 20); i++) {
+        for (i = 1; i <= std::min(pgn.nMaxMove, 20); i++) {
             dwFileMove[i - 1] = Move2File(pgn.wmvMoveTable[i], pos);
             TryMove(pos, nStatus, pgn.wmvMoveTable[i]);
         }

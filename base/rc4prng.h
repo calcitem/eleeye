@@ -15,7 +15,7 @@ struct RC4Struct {
         }
         for (i = 0; i < 256; i++) {
             j = (j + s[i] + ((uint8_t*)lpKey)[i % nKeyLen]) & 255;
-            SWAP(s[i], s[j]);
+            std::swap(s[i], s[j]);
         }
     }
 
@@ -45,7 +45,7 @@ struct RC4Struct {
     {
         x = (x + 1) & 255;
         y = (y + s[x]) & 255;
-        SWAP(s[x], s[y]);
+        std::swap(s[x], s[y]);
         return s[(s[x] + s[y]) & 255];
     }
 

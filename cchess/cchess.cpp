@@ -950,7 +950,7 @@ int File2Move(uint32_t dwFileStr, const PositionStruct& pos)
             for (i = 0; i < nPieceNum - 1; i++) {
                 for (j = nPieceNum - 1; j > i; j--) {
                     if (FILESQ_SIDE_PIECE(pos, nPieceList[j - 1]) > FILESQ_SIDE_PIECE(pos, nPieceList[j])) {
-                        SWAP(nPieceList[j - 1], nPieceList[j]);
+                        std::swap(nPieceList[j - 1], nPieceList[j]);
                     }
                 }
             }
@@ -1063,7 +1063,7 @@ uint32_t Move2File(int mv, const PositionStruct& pos)
             for (i = 0; i < nPieceNum - 1; i++) {
                 for (j = nPieceNum - 1; j > i; j--) {
                     if (FILESQ_SIDE_PIECE(pos, nPieceList[j - 1]) > FILESQ_SIDE_PIECE(pos, nPieceList[j])) {
-                        SWAP(nPieceList[j - 1], nPieceList[j]);
+                        std::swap(nPieceList[j - 1], nPieceList[j]);
                     }
                 }
             }
