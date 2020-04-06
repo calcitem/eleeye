@@ -30,3 +30,21 @@ add_executable(uccitest
 target_link_libraries(uccitest
     base
 )
+
+
+file(GLOB tests_SRCS "./tests/*.cpp")
+file(GLOB tests_INCS "./tests/*.h")
+
+add_executable(run_tests
+    run_tests.cpp
+    ${eleeye_sources}
+    ${tests_SRCS} ${tests_INCS}
+)
+target_link_libraries(run_tests
+    base
+    gtest
+)
+source_group("" FILES run_tests.cpp)
+source_group("eleeye" FILES ${eleeye_sources})
+source_group("tests" FILES ${tests_SRCS} ${tests_INCS})
+
