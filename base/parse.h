@@ -7,6 +7,7 @@
 #include <shlwapi.h>
 #include <windows.h>
 
+
 #pragma comment(lib, "Shlwapi.lib")
 
 inline char* strcasestr(const char* sz1, const char* sz2)
@@ -134,7 +135,7 @@ inline int Str2Digit(const char* sz, int nMin, int nMax)
 {
     int nRet;
     if (sscanf(sz, "%d", &nRet) > 0) {
-        return std::min(std::max(nRet, nMin), nMax);
+        return min(max(nRet, nMin), nMax);
     } else {
         return nMin;
     }
