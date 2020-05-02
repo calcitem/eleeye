@@ -1,10 +1,12 @@
 /BIN/
 .project
 .settings
-/@bin/
-/@lib/
+/@bin*/
+/@lib*/
 /build/
 /.vscode/
+.vs
+out/
 clang-format.exe
 format.bat
 *.APS
